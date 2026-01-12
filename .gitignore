@@ -1,0 +1,19 @@
+# Бинарники
+*.exe
+/bin/
+/build/
+/tmp/
+
+# Секреты и конфиги
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+
+# Go
+vendor/
+
+# Docker
+*.log
