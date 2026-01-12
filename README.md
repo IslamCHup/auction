@@ -1,4 +1,4 @@
-project-name/
+auction/
 ├── docker-compose.yaml       # Вся инфраструктура
 ├── .gitignore
 ├── README.md
@@ -12,7 +12,7 @@ project-name/
 │   ├── go.mod
 │   └── go.sum
 │
-├── user-service/             # User Service
+├── auction-service/             # Auction Service
 │   ├── cmd/app/main.go
 │   ├── internal/
 │   │   ├── config/
@@ -24,8 +24,11 @@ project-name/
 │   ├── go.mod
 │   └── go.sum
 │
-├── order-service/            # Order Service
+├── user-service/            # User Service
 │   └── ... (аналогичная структура)
+│
+└── wallet-service/     # Wallet Service
+|   └── ... (аналогичная структура)
 │
 └── notification-service/     # Notification Service
     └── ... (аналогичная структура)
