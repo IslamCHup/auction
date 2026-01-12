@@ -1,0 +1,23 @@
+# Простой Dockerfile для Go приложения
+# Используй этот файл для первого знакомства
+
+FROM golang:1.23
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o main .
+
+ENV DB_HOST=localhost
+ENV DB_USER=myuser
+ENV DB_PASSWORD=mypassword
+ENV DB_NAME=mydb
+ENV DB_PORT=5432
+
+EXPOSE 8080
+
+CMD ["./main"]
