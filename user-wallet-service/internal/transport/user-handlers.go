@@ -3,6 +3,7 @@ package transport
 import (
 	"net/http"
 
+	"user-service/internal/models"
 	m "user-service/internal/models"
 	"user-service/internal/services"
 
@@ -36,13 +37,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, m.AuthResponse{Token: token, User: toSimple(u)})
 }
 
-type loginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req loginRequest
+	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
