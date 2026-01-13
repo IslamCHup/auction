@@ -28,64 +28,64 @@ func NewWalletService(repo repository.WalletRepository) WalletService {
 }
 
 func (s *walletService) GetWallet(userID uint) (*models.Wallet, error) {
-	// Ensure wallet exists (non-transactional quick path)
-	w, err := s.repo.GetByUserID(userID)
+	// убедимся, что кошелек существует
+	wallet, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
-	if w == nil {
-		w = &models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
-		if err := s.repo.CreateOrUpdate(w); err != nil {
+	if wallet == nil {
+		wallet = &models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
+		if err := s.repo.CreateOrUpdate(wallet); err != nil {
 			return nil, err
 		}
 	}
-	return w, nil
+	return wallet, nil
 }
 
 func (s *walletService) Deposit(userID uint, amount int64, description string) (*models.Wallet, error) {
 	if amount <= 0 {
 		return nil, errors.New("amount must be positive")
 	}
-	var res *models.Wallet
-	err := s.repo.Transaction(func(txDB *gorm.DB) error {
-		var w models.Wallet
-		if err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&w).Error; err != nil {
+	var result *models.Wallet
+	err := s.repo.Transaction(func(tx *gorm.DB) error {
+		var wallet models.Wallet
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				w = models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
-				if err := txDB.Create(&w).Error; err != nil {
+				wallet = models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
+				if err := tx.Create(&wallet).Error; err != nil {
 					return err
 				}
 			} else {
 				return err
 			}
 		}
-		beforeBal := w.Balance
-		beforeFrozen := w.FrozenBalance
-		w.Balance += amount
-		if err := txDB.Save(&w).Error; err != nil {
+		beforeBalance := wallet.Balance
+		beforeFrozen := wallet.FrozenBalance
+		wallet.Balance += amount
+		if err := tx.Save(&wallet).Error; err != nil {
 			return err
 		}
-		t := models.Transaction{
-			WalletID:      w.ID,
+		transaction := models.Transaction{
+			WalletID:      wallet.ID,
 			UserID:        userID,
 			Type:          models.TransactionDeposit,
 			Amount:        amount,
-			BalanceBefore: beforeBal,
-			BalanceAfter:  w.Balance,
+			BalanceBefore: beforeBalance,
+			BalanceAfter:  wallet.Balance,
 			FrozenBefore:  beforeFrozen,
-			FrozenAfter:   w.FrozenBalance,
+			FrozenAfter:   wallet.FrozenBalance,
 			Description:   description,
 		}
-		if err := txDB.Create(&t).Error; err != nil {
+		if err := tx.Create(&transaction).Error; err != nil {
 			return err
 		}
-		res = &w
+		result = &wallet
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return result, nil
 }
 
 func (s *walletService) Freeze(userID uint, amount int64, description string) (*models.Wallet, error) {

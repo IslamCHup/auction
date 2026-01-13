@@ -29,18 +29,17 @@ func (r *walletRepository) Transaction(fn func(tx *gorm.DB) error) error {
 }
 
 func (r *walletRepository) GetByUserID(userID uint) (*models.Wallet, error) {
-	var w models.Wallet
-	if err := r.db.Where("user_id = ?", userID).First(&w).Error; err != nil {
+	var wallet models.Wallet
+	if err := r.db.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &w, nil
+	return &wallet, nil
 }
 
 func (r *walletRepository) CreateOrUpdate(wallet *models.Wallet) error {
-	// Save handles both create (when primary key is zero) and update
 	return r.db.Save(wallet).Error
 }
 
@@ -50,14 +49,14 @@ func (r *walletRepository) CreateTransaction(tx *models.Transaction) error {
 
 func (r *walletRepository) ListTransactions(userID uint, limit, offset int) ([]models.Transaction, error) {
 	var txs []models.Transaction
-	q := r.db.Where("user_id = ?", userID).Order("created_at desc")
+	query := r.db.Where("user_id = ?", userID).Order("created_at desc")
 	if limit > 0 {
-		q = q.Limit(limit)
+		query = query.Limit(limit)
 	}
 	if offset > 0 {
-		q = q.Offset(offset)
+		query = query.Offset(offset)
 	}
-	if err := q.Find(&txs).Error; err != nil {
+	if err := query.Find(&txs).Error; err != nil {
 		return nil, err
 	}
 	return txs, nil
