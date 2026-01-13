@@ -17,3 +17,5 @@ vendor/
 
 # Docker
 *.log
+
+auction-service/.env
