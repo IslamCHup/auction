@@ -1,0 +1,9 @@
+package utils
+
+import "errors"
+
+var (
+	ErrAmountMustBePositive         = errors.New("amount must be positive")
+	ErrInsufficientAvailableBalance = errors.New("insufficient available balance")
+	ErrResultingBalanceNegative     = errors.New("resulting balance negative")
+)

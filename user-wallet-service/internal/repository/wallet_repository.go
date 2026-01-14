@@ -10,10 +10,11 @@ import (
 
 type WalletRepository interface {
 	GetByUserID(userID uint) (*models.Wallet, error)
-	CreateOrUpdate(wallet *models.Wallet) error
+	SaveWallet(wallet *models.Wallet) error
+	CreateWallet(wallet *models.Wallet) error
 	CreateTransaction(tx *models.Transaction) error
 	ListTransactions(userID uint, limit, offset int) ([]models.Transaction, error)
-	Transaction(fn func(tx *gorm.DB) error) error
+	WithDB(db *gorm.DB) WalletRepository
 }
 
 type walletRepository struct {
@@ -24,8 +25,8 @@ func NewWalletRepository(db *gorm.DB) WalletRepository {
 	return &walletRepository{db: db}
 }
 
-func (r *walletRepository) Transaction(fn func(tx *gorm.DB) error) error {
-	return r.db.Transaction(fn)
+func (r *walletRepository) WithDB(db *gorm.DB) WalletRepository {
+	return &walletRepository{db: db}
 }
 
 func (r *walletRepository) GetByUserID(userID uint) (*models.Wallet, error) {
@@ -39,8 +40,12 @@ func (r *walletRepository) GetByUserID(userID uint) (*models.Wallet, error) {
 	return &wallet, nil
 }
 
-func (r *walletRepository) CreateOrUpdate(wallet *models.Wallet) error {
+func (r *walletRepository) SaveWallet(wallet *models.Wallet) error {
 	return r.db.Save(wallet).Error
+}
+
+func (r *walletRepository) CreateWallet(wallet *models.Wallet) error {
+	return r.db.Create(wallet).Error
 }
 
 func (r *walletRepository) CreateTransaction(tx *models.Transaction) error {
