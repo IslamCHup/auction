@@ -15,33 +15,41 @@ func main() {
 	logger := config.InitLogger()
 
 	if err := godotenv.Load(); err != nil {
-		logger.Error("env не найдено", "err", err.Error())
+		logger.Warn("env file not found, using system env")
 	}
 
-	auctionProxy := proxy.NewReverseProxy(os.Getenv("AUCTION_SERVICE_URL"), logger)
-	userProxy := proxy.NewReverseProxy(os.Getenv("USER_SERVICE_URL"), logger)
+	authProxy := proxy.NewReverseProxy(os.Getenv("AUTH_SERVICE_URL"), logger)
+	auctionProxy := proxy.NewReverseProxy(os.Getenv("LOT_SERVICE_URL"), logger)
 	walletProxy := proxy.NewReverseProxy(os.Getenv("WALLET_SERVICE_URL"), logger)
+	notificationProxy := proxy.NewReverseProxy(os.Getenv("NOTIFICATION_SERVICE_URL"), logger)
 
 	r := gin.Default()
 
 	r.Use(cors.Default())
-	r.Use(middleware.RateLimitMiddleware())
 	r.Use(middleware.TimeoutMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
 
-	r.Any("/auction/*path", proxy.MakeProxyHandler(auctionProxy))
-	r.Any("/user/*path", proxy.MakeProxyHandler(userProxy))
-	r.Any("/wallet/*path", proxy.MakeProxyHandler(walletProxy))
+	r.Any("/api/auth/*path", proxy.MakeProxyHandler(authProxy))
+	r.Any("/api/lots/*path", proxy.MakeProxyHandler(auctionProxy))
+	r.Any("/api/wallet/*path", proxy.MakeProxyHandler(walletProxy))
+	r.Any("/api/notifications/*path", proxy.MakeProxyHandler(notificationProxy))
+
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	logger.Info(
-		"starting gateway",
-		"addr", ":8080",
-		"auction", os.Getenv("AUCTION_SERVICE_URL"),
-		"user", os.Getenv("USER_SERVICE_URL"),
+		"gateway started",
+		"port", port,
+		"auth", os.Getenv("AUTH_SERVICE_URL"),
+		"lot", os.Getenv("LOT_SERVICE_URL"),
 		"wallet", os.Getenv("WALLET_SERVICE_URL"),
+		"notification", os.Getenv("NOTIFICATION_SERVICE_URL"),
 	)
 
-	if err := r.Run(":" + os.Getenv("PORT")); err != nil {
-		logger.Error("failed to run server", "err", err.Error())
+	if err := r.Run(":" + port); err != nil {
+		logger.Error("failed to run gateway", "err", err.Error())
 	}
-	
 }
