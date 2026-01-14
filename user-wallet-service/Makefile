@@ -1,7 +1,7 @@
 run:
-	go run cmd/mini-jira/main.go
+	go run cmd/app/main.go
 
-seede:
+seed:
 	go run cmd/seed/main.go
 
 fmt:
