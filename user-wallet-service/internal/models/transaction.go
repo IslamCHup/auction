@@ -12,8 +12,12 @@ const (
 type Transaction struct {
 	Base
 
-	WalletID uint            `json:"wallet_id" gorm:"index;not null"`
-	UserID   uint            `json:"user_id" gorm:"index;not null"`
+	WalletID uint            `json:"wallet_id" gorm:"index;not null;foreignKey:ID;references:ID"`
+	Wallet   *Wallet         `json:"-" gorm:"foreignKey:WalletID;references:ID"`
+
+	UserID   uint            `json:"user_id" gorm:"index;not null;foreignKey:ID;references:ID"`
+	User     *User           `json:"-" gorm:"foreignKey:UserID;references:ID"`
+	
 	Type     TransactionType `json:"type" gorm:"type:varchar(32);not null"`
 	Amount   int64           `json:"amount" gorm:"not null"`
 
