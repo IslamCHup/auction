@@ -163,7 +163,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 			return err
 		}
 		if wallet.FrozenBalance < amount {
-			return utils.ErrInsufficientAvailableBalance
+			return utils.ErrInsufficientFrozenBalance
 		}
 		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
@@ -207,7 +207,7 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 			return err
 		}
 		if wallet.FrozenBalance < amount {
-			return utils.ErrInsufficientAvailableBalance
+			return utils.ErrInsufficientFrozenBalance
 		}
 
 		beforeBalance := wallet.Balance
