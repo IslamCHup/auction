@@ -165,7 +165,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 		if wallet.FrozenBalance < amount {
 			return utils.ErrInsufficientAvailableBalance
 		}
-		beforeBal := wallet.Balance
+		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.FrozenBalance -= amount
 		if err := walletRepo.SaveWallet(&wallet); err != nil {
@@ -176,7 +176,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 			UserID:        userID,
 			Type:          models.TransactionUnfreeze,
 			Amount:        amount,
-			BalanceBefore: beforeBal,
+			BalanceBefore: beforeBalance,
 			BalanceAfter:  wallet.Balance,
 			FrozenBefore:  beforeFrozen,
 			FrozenAfter:   wallet.FrozenBalance,
@@ -210,14 +210,15 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 			return utils.ErrInsufficientAvailableBalance
 		}
 
-		beforeBal := wallet.Balance
+		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.FrozenBalance -= amount
 		wallet.Balance -= amount
 
 		if wallet.Balance < 0 {
 			return utils.ErrResultingBalanceNegative
-		}
+		} // на вский случай
+
 		if err := walletRepo.SaveWallet(&wallet); err != nil {
 			return err
 		}
@@ -227,7 +228,7 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 			UserID:        userID,
 			Type:          models.TransactionCharge,
 			Amount:        amount,
-			BalanceBefore: beforeBal,
+			BalanceBefore: beforeBalance,
 			BalanceAfter:  wallet.Balance,
 			FrozenBefore:  beforeFrozen,
 			FrozenAfter:   wallet.FrozenBalance,
