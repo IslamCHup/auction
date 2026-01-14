@@ -43,4 +43,5 @@ func main() {
 	if err := r.Run(":" + os.Getenv("PORT")); err != nil {
 		logger.Error("failed to run server", "err", err.Error())
 	}
+	
 }
