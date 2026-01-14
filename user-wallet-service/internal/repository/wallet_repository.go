@@ -6,10 +6,12 @@ import (
 	models "user-service/internal/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type WalletRepository interface {
 	GetByUserID(userID uint) (*models.Wallet, error)
+	GetByUserIDWithLock(userID uint) (*models.Wallet, error)
 	SaveWallet(wallet *models.Wallet) error
 	CreateWallet(wallet *models.Wallet) error
 	CreateTransaction(tx *models.Transaction) error
@@ -32,6 +34,17 @@ func (r *walletRepository) WithDB(db *gorm.DB) WalletRepository {
 func (r *walletRepository) GetByUserID(userID uint) (*models.Wallet, error) {
 	var wallet models.Wallet
 	if err := r.db.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &wallet, nil
+}
+
+func (r *walletRepository) GetByUserIDWithLock(userID uint) (*models.Wallet, error) {
+	var wallet models.Wallet
+	if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

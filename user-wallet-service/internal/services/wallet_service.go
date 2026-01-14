@@ -1,14 +1,11 @@
 package services
 
 import (
-	"errors"
-
 	models "user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type WalletService interface {
@@ -52,25 +49,22 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 
 	var result *models.Wallet
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-
-		var wallet models.Wallet
-
 		walletRepo := s.repo.WithDB(tx)
 
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				wallet = models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
-				if err := walletRepo.CreateWallet(&wallet); err != nil {
-					return err
-				}
-			} else {
+		wallet, err := walletRepo.GetByUserIDWithLock(userID)
+		if err != nil {
+			return err
+		}
+		if wallet == nil {
+			wallet = &models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
+			if err := walletRepo.CreateWallet(wallet); err != nil {
 				return err
 			}
 		}
 		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.Balance += amount
-		if err := walletRepo.SaveWallet(&wallet); err != nil {
+		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
 		transaction := models.Transaction{
@@ -87,7 +81,7 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 		if err := walletRepo.CreateTransaction(&transaction); err != nil {
 			return err
 		}
-		result = &wallet
+		result = wallet
 		return nil
 	})
 	if err != nil {
@@ -104,12 +98,14 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 	var result *models.Wallet
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var wallet models.Wallet
-
 		walletRepo := s.repo.WithDB(tx)
 
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		wallet, err := walletRepo.GetByUserIDWithLock(userID)
+		if err != nil {
 			return err
+		}
+		if wallet == nil {
+			return gorm.ErrRecordNotFound
 		}
 
 		available := wallet.Balance - wallet.FrozenBalance
@@ -121,7 +117,7 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 		beforeFrozen := wallet.FrozenBalance
 
 		wallet.FrozenBalance += amount
-		if err := walletRepo.SaveWallet(&wallet); err != nil {
+		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
 
@@ -141,7 +137,7 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 			return err
 		}
 
-		result = &wallet
+		result = wallet
 		return nil
 	})
 	if err != nil {
@@ -156,11 +152,14 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 	}
 	var result *models.Wallet
 	err := s.db.Transaction(func(txDB *gorm.DB) error {
-		var wallet models.Wallet
 		walletRepo := s.repo.WithDB(txDB)
 
-		if err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		wallet, err := walletRepo.GetByUserIDWithLock(userID)
+		if err != nil {
 			return err
+		}
+		if wallet == nil {
+			return gorm.ErrRecordNotFound
 		}
 		if wallet.FrozenBalance < amount {
 			return utils.ErrInsufficientFrozenBalance
@@ -168,7 +167,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.FrozenBalance -= amount
-		if err := walletRepo.SaveWallet(&wallet); err != nil {
+		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
 		t := models.Transaction{
@@ -185,7 +184,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 		if err := walletRepo.CreateTransaction(&t); err != nil {
 			return err
 		}
-		result = &wallet
+		result = wallet
 		return nil
 	})
 	if err != nil {
@@ -200,11 +199,14 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 	}
 	var result *models.Wallet
 	err := s.db.Transaction(func(txDB *gorm.DB) error {
-		var wallet models.Wallet
 		walletRepo := s.repo.WithDB(txDB)
 
-		if err := txDB.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		wallet, err := walletRepo.GetByUserIDWithLock(userID)
+		if err != nil {
 			return err
+		}
+		if wallet == nil {
+			return gorm.ErrRecordNotFound
 		}
 		if wallet.FrozenBalance < amount {
 			return utils.ErrInsufficientFrozenBalance
@@ -217,9 +219,9 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 
 		if wallet.Balance < 0 {
 			return utils.ErrResultingBalanceNegative
-		} // на вский случай
+		}
 
-		if err := walletRepo.SaveWallet(&wallet); err != nil {
+		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
 
@@ -237,7 +239,7 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 		if err := walletRepo.CreateTransaction(&t); err != nil {
 			return err
 		}
-		result = &wallet
+		result = wallet
 		return nil
 	})
 	if err != nil {
