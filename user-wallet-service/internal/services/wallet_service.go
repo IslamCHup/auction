@@ -64,6 +64,7 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.Balance += amount
+
 		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
@@ -105,7 +106,7 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 			return err
 		}
 		if wallet == nil {
-			return gorm.ErrRecordNotFound
+			return utils.ErrWalletNotFound
 		}
 
 		available := wallet.Balance - wallet.FrozenBalance
@@ -159,7 +160,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 			return err
 		}
 		if wallet == nil {
-			return gorm.ErrRecordNotFound
+			return utils.ErrWalletNotFound
 		}
 		if wallet.FrozenBalance < amount {
 			return utils.ErrInsufficientFrozenBalance
@@ -167,6 +168,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 		beforeBalance := wallet.Balance
 		beforeFrozen := wallet.FrozenBalance
 		wallet.FrozenBalance -= amount
+
 		if err := walletRepo.SaveWallet(wallet); err != nil {
 			return err
 		}
@@ -206,7 +208,7 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 			return err
 		}
 		if wallet == nil {
-			return gorm.ErrRecordNotFound
+			return utils.ErrWalletNotFound
 		}
 		if wallet.FrozenBalance < amount {
 			return utils.ErrInsufficientFrozenBalance
