@@ -125,7 +125,7 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 			return err
 		}
 
-		transation := models.Transaction{
+		transaction := models.Transaction{
 			WalletID:      wallet.ID,
 			UserID:        userID,
 			Type:          models.TransactionFreeze,
@@ -137,12 +137,12 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 			Description:   description,
 		}
 
-		if err := walletRepo.CreateTransaction(&transation); err != nil {
+		if err := walletRepo.CreateTransaction(&transaction); err != nil {
 			return err
 		}
 
 		result = wallet
-		tran = &transation
+		tran = &transaction
 		return nil
 	})
 	if err != nil {

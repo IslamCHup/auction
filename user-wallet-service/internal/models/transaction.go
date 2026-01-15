@@ -31,6 +31,6 @@ type Transaction struct {
 }
 
 type TransactionForRequest struct {
-	Amount      int64  `json:"amount" binding:"required,gt=0"`
-	Description string `json:"description" binding:"required"`
+	Amount      int64  `json:"amount" binding:"required"`
+	Description string `json:"description"`
 }
