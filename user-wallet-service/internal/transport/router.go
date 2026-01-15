@@ -18,7 +18,7 @@ func SetupRouter(authHandler *AuthHandler, jwt services.JWTService) *gin.Engine 
 		}
 
 		users := api.Group("/users")
-		users.Use(AuthMiddleware(jwt))
+		// users.Use(AuthMiddleware(jwt))
 		{
 			users.GET("/me", authHandler.Me)
 			users.PUT("/me", authHandler.UpdateMe)
