@@ -5,6 +5,7 @@ import (
 	"auction-service/internal/repository"
 	"auction-service/internal/services"
 	"auction-service/internal/transport"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,8 +18,10 @@ func main() {
 	bidRepository := repository.NewBidRepository(db)
 	lotService := services.NewLotService(lotRepository)
 	lotHandler := transport.NewLotHandler(lotService)
-	bidService := services.NewBidService(bidRepository)
+	bidService := services.NewBidService(bidRepository, lotRepository)
 	bidHandler := transport.NewBidHandler(bidService)
+
+	go startAuctionWorker(lotService)
 
 	server.POST("/lots", lotHandler.CreateLot)
 	server.GET("/lots", lotHandler.GetAllLots)
@@ -30,5 +33,17 @@ func main() {
 	server.GET("/users/:id/lots", lotHandler.GetAllLotsByUser)
 	server.GET("/users/:id/bids", bidHandler.GetAllBidsByUser)
 
-	server.Run(":8080")
+	server.Run(":8081")
+}
+
+func startAuctionWorker(lotService *services.LotService) {
+	interval := 5 * time.Minute
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if err := lotService.CompleteExpiredLots(); err != nil {
+			continue
+		}
+	}
 }

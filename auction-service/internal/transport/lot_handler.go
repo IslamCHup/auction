@@ -45,7 +45,7 @@ func (h *LotHandler) UpdateLot(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.service.CreateLot(&lotModel); err != nil {
+	if err := h.service.UpdateLot(&lotModel); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -3,6 +3,7 @@ package services
 import (
 	"auction-service/internal/models"
 	"auction-service/internal/repository"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -50,6 +51,41 @@ func (s *LotService) GetAllLots() ([]models.LotModel, error) {
 	return s.repository.GetAllLots()
 }
 
+func (s *LotService) UpdateLot(lotModel *models.LotModel) error {
+	if lotModel.Status != models.LotStatusDraft {
+		return errors.New("only draft lots can be updated")
+	}
+	if lotModel.StartDate.Before(time.Now()) {
+		return errors.New("lot start date cannot be in the past")
+	}
+	if lotModel.EndDate.Before(time.Now()) {
+		return errors.New("lot end date cannot be in the past")
+	}
+	if lotModel.StartPrice <= 0 {
+		return errors.New("start price must be greater than 0")
+	}
+	if lotModel.MinStep <= 0 {
+		return errors.New("min step must be greater than 0")
+	}
+
+	return s.repository.UpdateLot(lotModel)
+}
+
 func (s *LotService) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
 	return s.repository.GetAllLotsByUser(userID)
+}
+
+func (s *LotService) CompleteExpiredLots() error {
+	expiredLots, err := s.repository.GetExpiredActiveLots()
+	if err != nil {
+		return err
+	}
+
+	for _, lot := range expiredLots {
+		lot.Status = models.LotStatusCompleted
+		if err := s.repository.UpdateLot(&lot); err != nil {
+			return err
+		}
+	}
+	return nil
 }

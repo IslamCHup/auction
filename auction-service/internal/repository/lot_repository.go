@@ -2,6 +2,7 @@ package repository
 
 import (
 	"auction-service/internal/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -16,6 +17,10 @@ func NewLotRepository(db *gorm.DB) *LotRepository {
 
 func (r *LotRepository) CreateLot(lotModel *models.LotModel) error {
 	return r.db.Create(lotModel).Error
+}
+
+func (r *LotRepository) UpdateLot(lotModel *models.LotModel) error {
+	return r.db.Save(lotModel).Error
 }
 
 func (r *LotRepository) GetLotByID(id uint64) (*models.LotModel, error) {
@@ -38,6 +43,14 @@ func (r *LotRepository) GetAllLots() ([]models.LotModel, error) {
 func (r *LotRepository) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
 	var lots []models.LotModel
 	if err := r.db.Where("user_id = ?", userID).Find(&lots).Error; err != nil {
+		return nil, err
+	}
+	return lots, nil
+}
+
+func (r *LotRepository) GetExpiredActiveLots() ([]models.LotModel, error) {
+	var lots []models.LotModel
+	if err := r.db.Where("status = ? AND end_date < ?", models.LotStatusActive, time.Now()).Find(&lots).Error; err != nil {
 		return nil, err
 	}
 	return lots, nil
