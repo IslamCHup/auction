@@ -29,7 +29,7 @@ func (h *WalletHandler) GetWallet(c *gin.Context) {
 
 	wallet, err := h.wallet.GetWallet(uid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -61,7 +61,7 @@ func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 
 	wallet, transaction, err := h.wallet.Deposit(uid, req.Amount, req.Description)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -81,12 +81,7 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
-		return
-	}
-
-	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -96,7 +91,7 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 
 	wallet, transaction, err := h.wallet.Freeze(uid, req.Amount, req.Description)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -125,13 +120,9 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 		return
 	}
 
-	if req.Description == "" {
-		req.Description = utils.DefaultDescription
-	}
-
 	wallet, transaction, err := h.wallet.Unfreeze(uid, req.Amount, req.Description)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -151,7 +142,7 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -166,7 +157,7 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 
 	wallet, transaction, err := h.wallet.Charge(uid, req.Amount, req.Description)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -174,4 +165,8 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 		"wallet":         wallet,
 		"transaction_id": transaction.ID},
 	)
+}
+
+func (h *WalletHandler) ListTransactions(c *gin.Context) {
+
 }
