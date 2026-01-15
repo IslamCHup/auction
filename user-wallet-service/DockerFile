@@ -1,7 +1,5 @@
-# Простой Dockerfile для Go приложения
-# Используй этот файл для первого знакомства
-
-FROM golang:1.23
+# Этап 1: Сборка
+FROM golang:1.25 AS builder
 
 WORKDIR /app
 
@@ -10,9 +8,22 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main .
+# Собираем статически связанный бинарник
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-ENV DB_HOST=localhost
+# Этап 2: Запуск
+FROM alpine:3.19
+
+WORKDIR /app
+
+# Устанавливаем сертификаты для HTTPS запросов
+RUN apk --no-cache add ca-certificates
+
+# Копируем бинарник из этапа сборки
+COPY --from=builder /app/main .
+
+# Переменные окружения
+ENV DB_HOST=my-postgres
 ENV DB_USER=myuser
 ENV DB_PASSWORD=mypassword
 ENV DB_NAME=mydb
