@@ -18,4 +18,6 @@ vendor/
 # Docker
 *.log
 
+.DS_Store
+
 auction-service/.env
