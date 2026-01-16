@@ -5,26 +5,46 @@ import (
 	"auction-service/internal/services"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type BidHandler struct {
-	service *services.BidService
+	service services.BidService
 }
 
-func NewBidHandler(service *services.BidService) *BidHandler {
+func NewBidHandler(service services.BidService) *BidHandler {
 	return &BidHandler{service: service}
 }
 
 func (h *BidHandler) CreateBid(c *gin.Context) {
+	lotID := c.Param("id")
+	lotIDUint, err := strconv.ParseUint(lotID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lot id"})
+		return
+	}
+
 	var bidModel models.Bid
 	if err := c.ShouldBindJSON(&bidModel); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	h.service.CreateBid(&bidModel)
-	c.JSON(http.StatusCreated, bidModel)
+
+	// Установить LotModelID из URL и время создания
+	bidModel.LotModelID = uint(lotIDUint)
+	if bidModel.CreatedAt.IsZero() {
+		bidModel.CreatedAt = time.Now()
+	}
+
+	err = h.service.CreateBid(&bidModel)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Bid created successfully"})
 }
 
 func (h *BidHandler) GetBidByID(c *gin.Context) {
@@ -43,7 +63,13 @@ func (h *BidHandler) GetBidByID(c *gin.Context) {
 }
 
 func (h *BidHandler) GetAllBids(c *gin.Context) {
-	bids, err := h.service.GetAllBids()
+	lotID := c.Param("id")
+	lotIDUint, err := strconv.ParseUint(lotID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lot id"})
+		return
+	}
+	bids, err := h.service.GetAllBidsByLot(lotIDUint)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
