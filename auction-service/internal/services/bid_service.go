@@ -8,9 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type BidService interface {
@@ -55,7 +58,7 @@ func (s *bidService) freezeWallet(userID uint, amount int64) error {
 	return nil
 }
 
-func (s *bidService) unfreezePreviousWallet(userID uint, amount int64) error {
+func (s *bidService) unfreezeWallet(userID uint, amount int64) error {
 	url := fmt.Sprintf("%s/wallet/unfreeze", os.Getenv("WALLET_SERVICE_URL"))
 
 	jsonData, err := json.Marshal(map[string]interface{}{
@@ -118,7 +121,14 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 	previousBidID := lotModel.CurrentBidID
 	var previousBid *models.Bid
 	if previousBidID != 0 {
-		previousBid, _ = s.repository.GetBidByID(previousBidID)
+		var err error
+		previousBid, err = s.repository.GetBidByID(previousBidID)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Printf("WARNING: failed to get previous bid %d: %v", previousBidID, err)
+				previousBid = nil
+			}
+		}
 	}
 
 	// 1. Заморозить средства нового участника
@@ -130,15 +140,15 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 	// 2. Сохранить ставку
 	err = s.repository.CreateBid(bidModel)
 	if err != nil {
-		// Компенсация: разморозить средства при ошибке сохранения
-		s.unfreezePreviousWallet(bidModel.UserID, bidModel.Amount)
+		// Компенсация: откатить заморозку средств текущего пользователя при ошибке сохранения
+		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return fmt.Errorf("failed to create bid: %w", err)
 	}
 
 	// Проверить, что GORM установил ID
 	if bidModel.ID == 0 {
-		// Компенсация: разморозить средства
-		s.unfreezePreviousWallet(bidModel.UserID, bidModel.Amount)
+		// Компенсация: откатить заморозку средств текущего пользователя
+		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return errors.New("failed to create bid: ID not set")
 	}
 
@@ -147,15 +157,15 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 	lotModel.CurrentBidID = uint64(bidModel.ID)
 	err = s.lotRepository.UpdateLot(lotModel)
 	if err != nil {
-		// Компенсация: разморозить средства при ошибке обновления
-		s.unfreezePreviousWallet(bidModel.UserID, bidModel.Amount)
+		// Компенсация: откатить заморозку средств текущего пользователя при ошибке обновления
+		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return fmt.Errorf("failed to update lot: %w", err)
 	}
 
 	// 4. Разморозить средства предыдущего лидера (если есть)
 	if previousBid != nil {
-		// Разморозка предыдущей ставки (игнорируем ошибку, чтобы не блокировать новую ставку)
-		s.unfreezePreviousWallet(previousBid.UserID, previousBid.Amount)
+		// Разморозка средств предыдущего лидера (игнорируем ошибку, чтобы не блокировать новую ставку)
+		s.unfreezeWallet(previousBid.UserID, previousBid.Amount)
 	}
 
 	return nil

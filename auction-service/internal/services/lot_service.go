@@ -28,7 +28,7 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 }
 
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
-	lotModel.Status = "draft"
+	lotModel.Status = models.LotStatusDraft
 	lotModel.StartDate = time.Now()
 	lotModel.EndDate = time.Now().Add(24 * time.Hour)
 	lotModel.CurrentPrice = lotModel.StartPrice

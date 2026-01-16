@@ -31,7 +31,7 @@ func (h *LotHandler) CreateLot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Lot created successfully"})
 }
 
-func PaginationParams(c *gin.Context) (page int, limit int) {
+func paginationParams(c *gin.Context) (page int, limit int) {
 	page = 1
 	limit = 10
 
@@ -49,7 +49,7 @@ func PaginationParams(c *gin.Context) (page int, limit int) {
 }
 
 func (h *LotHandler) GetAllLots(c *gin.Context) {
-	page, limit := PaginationParams(c)
+	page, limit := paginationParams(c)
 	offset := (page - 1) * limit
 	lots, err := h.service.GetAllLots(offset, limit)
 	if err != nil {
