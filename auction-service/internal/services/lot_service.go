@@ -1,10 +1,12 @@
 package services
 
 import (
+	"auction-service/internal/kafka"
 	"auction-service/internal/models"
 	"auction-service/internal/repository"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -21,10 +23,15 @@ type LotService interface {
 type lotService struct {
 	repository    repository.LotRepository
 	bidRepository repository.BidRepository
+	kafkaProducer *kafka.Producer
 }
 
-func NewLotService(repository repository.LotRepository, bidRepository repository.BidRepository) LotService {
-	return &lotService{repository: repository, bidRepository: bidRepository}
+func NewLotService(repository repository.LotRepository, bidRepository repository.BidRepository, kafkaProducer *kafka.Producer) LotService {
+	return &lotService{
+		repository:    repository,
+		bidRepository: bidRepository,
+		kafkaProducer: kafkaProducer,
+	}
 }
 
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
@@ -104,6 +111,18 @@ func (s *lotService) CompleteExpiredLots() error {
 		}
 		if err := s.repository.UpdateLot(&lot); err != nil {
 			return err
+		}
+
+		// Отправка события в Kafka о завершении лота
+		if s.kafkaProducer != nil {
+			event := map[string]interface{}{
+				"lot_id":      lot.ID,
+				"winner_id":   lot.WinnerID,
+				"final_price": lot.CurrentPrice,
+			}
+			if err := s.kafkaProducer.SendMessage("auction.lot.completed", fmt.Sprintf("%d", lot.ID), event); err != nil {
+				log.Printf("WARNING: failed to send auction.lot.completed event to Kafka: %v", err)
+			}
 		}
 	}
 	return nil

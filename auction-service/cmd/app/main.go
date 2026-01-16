@@ -2,9 +2,11 @@ package main
 
 import (
 	"auction-service/internal/config"
+	"auction-service/internal/kafka"
 	"auction-service/internal/repository"
 	"auction-service/internal/services"
 	"auction-service/internal/transport"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,11 +16,20 @@ func main() {
 	server := gin.Default()
 	db := config.InitDatabase()
 
+	// Инициализация Kafka producer
+	kafkaProducer, err := kafka.NewProducer()
+	if err != nil {
+		log.Printf("WARNING: Failed to initialize Kafka producer: %v. Continuing without Kafka.", err)
+		kafkaProducer = nil
+	} else {
+		defer kafkaProducer.Close()
+	}
+
 	lotRepository := repository.NewLotRepository(db)
 	bidRepository := repository.NewBidRepository(db)
-	lotService := services.NewLotService(lotRepository, bidRepository)
+	lotService := services.NewLotService(lotRepository, bidRepository, kafkaProducer)
 	lotHandler := transport.NewLotHandler(lotService)
-	bidService := services.NewBidService(bidRepository, lotRepository)
+	bidService := services.NewBidService(bidRepository, lotRepository, kafkaProducer)
 	bidHandler := transport.NewBidHandler(bidService)
 
 	go startAuctionWorker(lotService)

@@ -30,7 +30,7 @@ COPY --from=builder /app/auction-service .
 
 USER appuser
 
-EXPOSE 8081
+EXPOSE 8080
 
 CMD ["./auction-service"]
 
