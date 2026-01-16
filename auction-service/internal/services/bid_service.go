@@ -162,10 +162,11 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		return fmt.Errorf("failed to update lot: %w", err)
 	}
 
-	// 4. Разморозить средства предыдущего лидера (если есть)
 	if previousBid != nil {
-		// Разморозка средств предыдущего лидера (игнорируем ошибку, чтобы не блокировать новую ставку)
-		s.unfreezeWallet(previousBid.UserID, previousBid.Amount)
+		err = s.unfreezeWallet(previousBid.UserID, previousBid.Amount)
+		if err != nil {
+			log.Printf("WARNING: failed to unfreeze wallet for previous bid %d: %v", previousBid.ID, err)
+		}
 	}
 
 	return nil
