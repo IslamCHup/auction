@@ -17,7 +17,8 @@ type AuthResponse struct {
 }
 
 type SimpleUser struct {
-	ID    uint   `json:"id"`
-	Email string `json:"email"`
-	Role  Role   `json:"role"`
+	ID       uint   `json:"id"`
+	FullName string `json:"full_name"`
+	Email    string `json:"email"`
+	Role     Role   `json:"role"`
 }

@@ -87,6 +87,11 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 		return
 	}
 
+	if req.Amount <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
+		return
+	}
+
 	if req.Description == "" {
 		req.Description = utils.DefaultDescription
 	}
