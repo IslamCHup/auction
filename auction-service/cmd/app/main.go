@@ -16,7 +16,7 @@ func main() {
 
 	lotRepository := repository.NewLotRepository(db)
 	bidRepository := repository.NewBidRepository(db)
-	lotService := services.NewLotService(lotRepository)
+	lotService := services.NewLotService(lotRepository, bidRepository)
 	lotHandler := transport.NewLotHandler(lotService)
 	bidService := services.NewBidService(bidRepository, lotRepository)
 	bidHandler := transport.NewBidHandler(bidService)
@@ -36,7 +36,7 @@ func main() {
 	server.Run(":8081")
 }
 
-func startAuctionWorker(lotService *services.LotService) {
+func startAuctionWorker(lotService services.LotService) {
 	interval := 5 * time.Minute
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

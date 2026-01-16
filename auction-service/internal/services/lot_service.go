@@ -8,50 +8,62 @@ import (
 	"time"
 )
 
-type LotServiceInterface interface {
+type LotService interface {
 	CreateLot(lotModel *models.LotModel) error
 	PublishLot(id uint64) error
 	GetLotByID(id uint64) (*models.LotModel, error)
-	GetAllLots() ([]models.LotModel, error)
+	GetAllLots(offset int, limit int) ([]models.LotModel, error)
+	UpdateLot(lotModel *models.LotModel) error
+	GetAllLotsByUser(userID uint64) ([]models.LotModel, error)
+	CompleteExpiredLots() error
 }
 
-type LotService struct {
-	repository *repository.LotRepository
+type lotService struct {
+	repository    repository.LotRepository
+	bidRepository repository.BidRepository
 }
 
-func NewLotService(repository *repository.LotRepository) *LotService {
-	return &LotService{repository: repository}
+func NewLotService(repository repository.LotRepository, bidRepository repository.BidRepository) LotService {
+	return &lotService{repository: repository, bidRepository: bidRepository}
 }
 
-func (s *LotService) CreateLot(lotModel *models.LotModel) error {
-	lotModel.Status = "draft"
+func (s *lotService) CreateLot(lotModel *models.LotModel) error {
+	lotModel.Status = models.LotStatusDraft
 	lotModel.StartDate = time.Now()
 	lotModel.EndDate = time.Now().Add(24 * time.Hour)
+	lotModel.CurrentPrice = lotModel.StartPrice
 	return s.repository.CreateLot(lotModel)
 }
 
-func (s *LotService) PublishLot(id uint64) error {
+func (s *lotService) PublishLot(id uint64) error {
 	lotModel, err := s.repository.GetLotByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get lot: %w", err)
 	}
-	lotModel.Status = "active"
-	if err := s.repository.CreateLot(lotModel); err != nil {
+	if lotModel.Status != models.LotStatusDraft {
+		return errors.New("only draft lots can be published")
+	}
+	lotModel.Status = models.LotStatusActive
+	// Убедимся, что CurrentPrice инициализирован
+	if lotModel.CurrentPrice == 0 {
+		lotModel.CurrentPrice = lotModel.StartPrice
+	}
+	if err := s.repository.UpdateLot(lotModel); err != nil {
 		return fmt.Errorf("failed to publish lot: %w", err)
 	}
 
 	return nil
 }
 
-func (s *LotService) GetLotByID(id uint64) (*models.LotModel, error) {
+func (s *lotService) GetLotByID(id uint64) (*models.LotModel, error) {
 	return s.repository.GetLotByID(uint64(id))
 }
 
-func (s *LotService) GetAllLots() ([]models.LotModel, error) {
-	return s.repository.GetAllLots()
+func (s *lotService) GetAllLots(offset int, limit int) ([]models.LotModel, error) {
+	return s.repository.GetAllLots(offset, limit)
 }
 
-func (s *LotService) UpdateLot(lotModel *models.LotModel) error {
+func (s *lotService) UpdateLot(lotModel *models.LotModel) error {
 	if lotModel.Status != models.LotStatusDraft {
 		return errors.New("only draft lots can be updated")
 	}
@@ -71,11 +83,11 @@ func (s *LotService) UpdateLot(lotModel *models.LotModel) error {
 	return s.repository.UpdateLot(lotModel)
 }
 
-func (s *LotService) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
+func (s *lotService) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
 	return s.repository.GetAllLotsByUser(userID)
 }
 
-func (s *LotService) CompleteExpiredLots() error {
+func (s *lotService) CompleteExpiredLots() error {
 	expiredLots, err := s.repository.GetExpiredActiveLots()
 	if err != nil {
 		return err
@@ -83,6 +95,13 @@ func (s *LotService) CompleteExpiredLots() error {
 
 	for _, lot := range expiredLots {
 		lot.Status = models.LotStatusCompleted
+		// Установить WinnerID из текущей лучшей ставки
+		if lot.CurrentBidID != 0 {
+			bid, err := s.bidRepository.GetBidByID(lot.CurrentBidID)
+			if err == nil && bid != nil {
+				lot.WinnerID = uint64(bid.UserID)
+			}
+		}
 		if err := s.repository.UpdateLot(&lot); err != nil {
 			return err
 		}
