@@ -52,11 +52,6 @@ func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 		return
 	}
 
-	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
-		return
-	}
-
 	if req.Description == "" {
 		req.Description = utils.DefaultDescription
 	}
@@ -84,11 +79,6 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
 		return
 	}
 
@@ -122,11 +112,6 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 		return
 	}
 
-	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
-		return
-	}
-
 	if req.Description == "" {
 		req.Description = utils.DefaultDescription
 	}
@@ -154,11 +139,6 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "amount must be positive!"})
 		return
 	}
 

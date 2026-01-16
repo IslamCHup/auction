@@ -42,9 +42,6 @@ func (s *walletService) GetWallet(userID uint) (*models.Wallet, error) {
 }
 
 func (s *walletService) Deposit(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
-	if amount <= 0 {
-		return nil, nil, utils.ErrAmountMustBePositive
-	}
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -94,9 +91,6 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 }
 
 func (s *walletService) Freeze(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
-	if amount <= 0 {
-		return nil, nil, utils.ErrAmountMustBePositive
-	}
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -152,9 +146,7 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 }
 
 func (s *walletService) Unfreeze(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
-	if amount <= 0 {
-		return nil, nil, utils.ErrAmountMustBePositive
-	}
+
 	var result *models.Wallet
 	var tran *models.Transaction
 	err := s.db.Transaction(func(txDB *gorm.DB) error {
@@ -202,9 +194,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 }
 
 func (s *walletService) Charge(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
-	if amount <= 0 {
-		return nil, nil, utils.ErrAmountMustBePositive
-	}
+
 	var result *models.Wallet
 	var tran *models.Transaction
 	err := s.db.Transaction(func(txDB *gorm.DB) error {
