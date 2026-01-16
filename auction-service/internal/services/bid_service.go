@@ -1,6 +1,7 @@
 package services
 
 import (
+	"auction-service/internal/kafka"
 	"auction-service/internal/models"
 	"auction-service/internal/repository"
 	"bytes"
@@ -27,10 +28,15 @@ type BidService interface {
 type bidService struct {
 	repository    repository.BidRepository
 	lotRepository repository.LotRepository
+	kafkaProducer *kafka.Producer
 }
 
-func NewBidService(repository repository.BidRepository, lotRepository repository.LotRepository) BidService {
-	return &bidService{repository: repository, lotRepository: lotRepository}
+func NewBidService(repository repository.BidRepository, lotRepository repository.LotRepository, kafkaProducer *kafka.Producer) BidService {
+	return &bidService{
+		repository:    repository,
+		lotRepository: lotRepository,
+		kafkaProducer: kafkaProducer,
+	}
 }
 
 func (s *bidService) freezeWallet(userID uint, amount int64) error {
@@ -166,6 +172,23 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		err = s.unfreezeWallet(previousBid.UserID, previousBid.Amount)
 		if err != nil {
 			log.Printf("WARNING: failed to unfreeze wallet for previous bid %d: %v", previousBid.ID, err)
+		}
+	}
+
+	// Отправка события в Kafka о создании ставки
+	if s.kafkaProducer != nil {
+		previousLeaderID := uint64(0)
+		if previousBid != nil {
+			previousLeaderID = uint64(previousBid.UserID)
+		}
+		event := map[string]interface{}{
+			"lot_id":             bidModel.LotModelID,
+			"bidder_id":          bidModel.UserID,
+			"amount":             bidModel.Amount,
+			"previous_leader_id": previousLeaderID,
+		}
+		if err := s.kafkaProducer.SendMessage("auction.bid.placed", fmt.Sprintf("%d", bidModel.LotModelID), event); err != nil {
+			log.Printf("WARNING: failed to send auction.bid.placed event to Kafka: %v", err)
 		}
 	}
 
