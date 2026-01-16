@@ -20,7 +20,7 @@ func NewAuthHandler(users services.UserService, jwt services.JWTService) *AuthHa
 }
 
 func toSimple(u *m.User) m.SimpleUser {
-	return m.SimpleUser{ID: u.ID, Email: u.Email, Role: u.Role}
+	return m.SimpleUser{ID: u.ID, FullName: u.FullName, Email: u.Email, Role: u.Role,}
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
