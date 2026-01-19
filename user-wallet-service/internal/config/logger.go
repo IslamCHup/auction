@@ -32,7 +32,7 @@ func InitLogger() *slog.Logger {
 
     logger := slog.New(handlersLogger)
 
-    slog.Info("logger инициализирован: ", "level", logLevel.String())
+    logger.Info("logger инициализирован: ", "level", logLevel.String())
 
     return logger
 }
