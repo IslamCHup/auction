@@ -15,15 +15,15 @@ func main() {
 	// load database
 	db := config.InitDatabase()
 
-	userRepo := repository.NewUserRepository(db)
-	walletRepo := repository.NewWalletRepository(db)
+	userRepo := repository.NewUserRepository(db, logger)
+	walletRepo := repository.NewWalletRepository(db, logger)
 
 	jwt := services.NewJWTService()
-	userSvc := services.NewUserService(userRepo, jwt)
-	walletSvc := services.NewWalletService(walletRepo, db)
+	userSvc := services.NewUserService(userRepo, jwt, logger)
+	walletSvc := services.NewWalletService(walletRepo, db, logger)
 
-	authHandler := transport.NewAuthHandler(userSvc, jwt)
-	walletHandler := transport.NewWalletHandler(userSvc, walletSvc)
+	authHandler := transport.NewAuthHandler(userSvc, jwt, logger)
+	walletHandler := transport.NewWalletHandler(userSvc, walletSvc, logger)
 
 	r := transport.SetupRouter(logger, authHandler, jwt, walletHandler)
 

@@ -2,6 +2,7 @@ package transport
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"user-service/internal/models"
@@ -14,27 +15,36 @@ import (
 type WalletHandler struct {
 	users  services.UserService
 	wallet services.WalletService
+	logger *slog.Logger
 }
 
 func NewWalletHandler(
-	users services.UserService, wallet services.WalletService,
+	users services.UserService, wallet services.WalletService, logger *slog.Logger,
 ) *WalletHandler {
-	return &WalletHandler{users: users, wallet: wallet}
+	return &WalletHandler{users: users, wallet: wallet, logger: logger}
 }
 
 func (h *WalletHandler) GetWallet(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("get wallet unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
+	}
+	if h.logger != nil {
+		h.logger.Info("get wallet", "user_id", uid)
 	}
 
 	wallet, err := h.wallet.GetWallet(uid)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("get wallet failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, wallet)
 }
 
@@ -43,11 +53,17 @@ func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("deposit unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		if h.logger != nil {
+			h.logger.Warn("deposit bad request", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -56,10 +72,21 @@ func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 		req.Description = utils.DefaultDescription
 	}
 
+	if h.logger != nil {
+		h.logger.Info("deposit attempt", "user_id", uid, "amount", req.Amount)
+	}
+
 	wallet, transaction, err := h.wallet.Deposit(uid, req.Amount, req.Description)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("deposit failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.logger != nil {
+		h.logger.Info("deposit success", "user_id", uid, "transaction_id", transaction.ID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -73,6 +100,9 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("freeze unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -86,10 +116,21 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 		req.Description = utils.DefaultDescription
 	}
 
+	if h.logger != nil {
+		h.logger.Info("freeze attempt", "user_id", uid, "amount", req.Amount)
+	}
+
 	wallet, transaction, err := h.wallet.Freeze(uid, req.Amount, req.Description)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("freeze failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.logger != nil {
+		h.logger.Info("freeze success", "user_id", uid, "transaction_id", transaction.ID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -103,6 +144,9 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("unfreeze unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -116,10 +160,21 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 		req.Description = utils.DefaultDescription
 	}
 
+	if h.logger != nil {
+		h.logger.Info("unfreeze attempt", "user_id", uid, "amount", req.Amount)
+	}
+
 	wallet, transaction, err := h.wallet.Unfreeze(uid, req.Amount, req.Description)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("unfreeze failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.logger != nil {
+		h.logger.Info("unfreeze success", "user_id", uid, "transaction_id", transaction.ID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -133,6 +188,9 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("charge unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -146,10 +204,21 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 		req.Description = utils.DefaultDescription
 	}
 
+	if h.logger != nil {
+		h.logger.Info("charge attempt", "user_id", uid, "amount", req.Amount)
+	}
+
 	wallet, transaction, err := h.wallet.Charge(uid, req.Amount, req.Description)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("charge failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.logger != nil {
+		h.logger.Info("charge success", "user_id", uid, "transaction_id", transaction.ID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -161,12 +230,18 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 func (h *WalletHandler) ListTransactions(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	if uid == 0 {
+		if h.logger != nil {
+			h.logger.Warn("list transactions unauthorized")
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	limit, err := parseQueryInt(c, "limit", 10, 1, 100)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Warn("list transactions bad request", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -177,8 +252,15 @@ func (h *WalletHandler) ListTransactions(c *gin.Context) {
 		return
 	}
 
+	if h.logger != nil {
+		h.logger.Info("list transactions", "user_id", uid, "limit", limit, "offset", offset)
+	}
+
 	transactions, err := h.wallet.ListTransactions(uid, limit, offset)
 	if err != nil {
+		if h.logger != nil {
+			h.logger.Error("list transactions failed", "user_id", uid, "err", err.Error())
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
