@@ -1,15 +1,22 @@
 package transport
 
 import (
+	"log/slog"
 	"user-service/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter(
+	logger *slog.Logger,
 	authHandler *AuthHandler, jwt services.JWTService, walletHandler *WalletHandler,
 ) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+
+
+	r.Use(gin.Recovery())
+
+	r.Use(LoggingMiddleware(logger))
 
 	api := r.Group("/api")
 	{

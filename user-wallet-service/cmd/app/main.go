@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"user-service/internal/config"
@@ -11,6 +10,9 @@ import (
 )
 
 func main() {
+	logger := config.InitLogger()
+
+	// load database
 	db := config.InitDatabase()
 
 	userRepo := repository.NewUserRepository(db)
@@ -23,13 +25,16 @@ func main() {
 	authHandler := transport.NewAuthHandler(userSvc, jwt)
 	walletHandler := transport.NewWalletHandler(userSvc, walletSvc)
 
-	r := transport.SetupRouter(authHandler, jwt, walletHandler)
+	r := transport.SetupRouter(logger, authHandler, jwt, walletHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8082"
 	}
+
+	logger.Info("service started", "port", port)
+
 	if err := r.Run(":" + port); err != nil {
-		log.Fatal(err)
+		logger.Error("failed to run service", "err", err.Error())
 	}
 }
