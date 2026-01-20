@@ -28,7 +28,7 @@ func NewReverseProxy(fullURL string, logger *slog.Logger) *httputil.ReverseProxy
 
 	serviceProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
 		logger.Error("upstream service error", "err", err.Error(), "path", req.URL.Path)
-		rw.Header().Set("Content-Type", "application/json")
+		rw.Header().Set("Content-Type", "application/json")		
 		rw.WriteHeader(http.StatusBadGateway)
 		io.WriteString(rw, `{"error":"upstream service unavailable"}`)
 	}
