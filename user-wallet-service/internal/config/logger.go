@@ -1,38 +1,39 @@
 package config
 
 import (
-    "log/slog"
-    "os"
-    "strings"
+	"fmt"
+	"log/slog"
+	"os"
+	"strings"
 )
 
 func ParseLog(level string) slog.Level {
-    switch strings.ToLower(level) {
-    case "debug":
-        return slog.LevelDebug
-    case "warn":
-        return slog.LevelWarn
-    case "error":
-        return slog.LevelError
-    default:
-        return slog.LevelInfo
-    }
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 func InitLogger() *slog.Logger {
-    logLevelENV := os.Getenv("LOG_LEVEL")
-    if logLevelENV == "" {
-        logLevelENV = "info"
-    }
+	logLevelENV := os.Getenv("LOG_LEVEL")
+	if logLevelENV == "" {
+		logLevelENV = "info"
+	}
 
-    logLevel := ParseLog(logLevelENV)
-    handlersLogger := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-        Level: logLevel,
-    })
+	logLevel := ParseLog(logLevelENV)
+	handlersLogger := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	})
 
-    logger := slog.New(handlersLogger)
+	logger := slog.New(handlersLogger)
 
-    logger.Info("logger инициализирован: ", "level", logLevel.String())
+	fmt.Println("logger инициализирован: ", "level", logLevel.String())
 
-    return logger
+	return logger
 }
