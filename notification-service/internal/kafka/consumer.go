@@ -115,6 +115,5 @@ if errors.Is(err, gorm.ErrDuplicatedKey) {
 	return nil // считаем событие успешно обработанным
 }
 
-
 Без этого дубликаты неизбежны, и это не баг consumer’а.
 */
