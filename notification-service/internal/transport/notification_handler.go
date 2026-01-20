@@ -24,29 +24,29 @@ func NewNotificationHandler(service services.NotificationService, logger *slog.L
 func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	notifications := r.Group("/notifications")
 	{
-		// notifications.POST("/", h.Create)
-		notifications.PUT("/:id/read", h.MarkAsRead)
+		notifications.POST("/", h.Create)
+		notifications.PATCH("/:id/read", h.MarkAsRead)
 		notifications.GET("/unread-count", h.CountUnread)
 		notifications.GET("/", h.ListNotification)
 	}
 }
 
-// func (h *NotificationHandler) Create(c *gin.Context) {
-// 	var req models.Notification
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		h.logger.Error("bind create", "err", err.Error())
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+func (h *NotificationHandler) Create(c *gin.Context) {
+	var req models.Notification
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("bind create", "err", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	if err := h.service.Create(&req); err != nil {
-// 		h.logger.Error("create notification", "err", err.Error(), "user_id", req.UserID)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create notification"})
-// 		return
-// 	}
+	if err := h.service.Create(&req); err != nil {
+		h.logger.Error("create notification", "err", err.Error(), "user_id", req.UserID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create notification"})
+		return
+	}
 
-// 	c.JSON(http.StatusCreated, req)
-// }
+	c.JSON(http.StatusCreated, req)
+}
 
 func (h *NotificationHandler) ListNotification(c *gin.Context) {
 	var filter models.FilterNotification

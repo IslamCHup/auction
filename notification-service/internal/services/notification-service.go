@@ -8,6 +8,7 @@ import (
 )
 
 type NotificationService interface {
+	Create(req *models.Notification) error
 	CreateWinnerLoserNotification(event *models.LotCompletedEvent) error
 	CreateBidPlacedNotification(event *models.BidPlacedEvent) error
 	ListNotification(filter models.FilterNotification) ([]models.Notification, error)
@@ -22,6 +23,13 @@ type notificationService struct {
 
 func NewNotificationService(repo repository.NotificationRepository, logger *slog.Logger) NotificationService {
 	return &notificationService{repo: repo, logger: logger}
+}
+
+func (s *notificationService) Create(req *models.Notification) error{
+	if err := s.repo.CreateNotification(req); err != nil{
+		return err
+	}
+	return nil
 }
 
 func (s *notificationService) CreateWinnerLoserNotification(event *models.LotCompletedEvent) error {
@@ -44,7 +52,7 @@ func (s *notificationService) CreateWinnerLoserNotification(event *models.LotCom
 			LotID:   event.LotID,
 			Type:    models.NotificationTypeAuctionLost,
 			Title:   "Аукцион проигран",
-			Message: fmt.Sprintf("Вы проиграли аукцион"),
+			Message: "Вы проиграли аукцион",
 		}
 		if err := s.repo.CreateNotification(loserNotif); err != nil {
 			s.logger.Error("create notification failed", "err", err.Error(), "user_id", loserNotif.UserID)
