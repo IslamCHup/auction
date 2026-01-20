@@ -94,9 +94,7 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 		return nil
 	})
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service deposit failed", "user_id", userID, "err", err.Error())
-		}
+		s.logger.Error("service deposit failed", "user_id", userID, "err", err.Error())
 		return nil, nil, err
 	}
 	s.logger.Info("service deposit success", "user_id", userID, "transaction_id", tran.ID)
@@ -207,14 +205,10 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 		return nil
 	})
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service unfreeze failed", "user_id", userID, "err", err.Error())
-		}
+		s.logger.Error("service unfreeze failed", "user_id", userID, "err", err.Error())
 		return nil, nil, err
 	}
-	if s.logger != nil {
-		s.logger.Info("service unfreeze success", "user_id", userID, "transaction_id", tran.ID)
-	}
+	s.logger.Info("service unfreeze success", "user_id", userID, "transaction_id", tran.ID)
 	return result, tran, nil
 }
 

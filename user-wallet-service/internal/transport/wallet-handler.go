@@ -90,6 +90,7 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("freeze bad request", "user_id", uid, "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -126,6 +127,7 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("unfreeze bad request", "user_id", uid, "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -162,6 +164,7 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("charge bad request", "user_id", uid, "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -204,6 +207,7 @@ func (h *WalletHandler) ListTransactions(c *gin.Context) {
 
 	offset, err := parseQueryInt(c, "offset", 0, 0, 10000)
 	if err != nil {
+		h.logger.Warn("list transactions bad request", "user_id", uid, "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
