@@ -12,10 +12,12 @@ import (
 )
 
 type UserClaims struct {
-	UID  uint   `json:"uid"`
+	UID  uint64   `json:"uid"`
 	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
+
+
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -25,7 +27,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		token := strings.TrimPrefix(auth, "Bearer ")
-		claims, err := ParseToken(token)
+		claims, err := parseToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
@@ -44,7 +46,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-func ParseToken(tokenStr string) (*UserClaims, error) {
+func parseToken(tokenStr string) (*UserClaims, error) {
 	claims := &UserClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {

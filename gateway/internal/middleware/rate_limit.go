@@ -52,12 +52,8 @@ var UserBucket sync.Map
 var BidBucket sync.Map
 
 func getOrCreateBucket(store *sync.Map, userID uint64, capacity int, refillRate float64) *TokenBucket {
-	if bucket, ok := store.Load(userID); ok {
-		return bucket.(*TokenBucket)
-	}
-	newBucket := NewTokenBucket(capacity, refillRate)
-	store.Store(userID, newBucket)
-	return newBucket
+	actual, _ := store.LoadOrStore(userID, NewTokenBucket(capacity, refillRate))
+	return actual.(*TokenBucket)
 }
 
 func UserRateLimitMiddleware() gin.HandlerFunc {
@@ -82,7 +78,7 @@ func UserRateLimitMiddleware() gin.HandlerFunc {
 
 func BidRateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !strings.Contains(c.FullPath(), "/bids/") {
+		if !strings.HasSuffix(c.FullPath(), "/bids") && !strings.Contains(c.FullPath(), "/bids/") {
 			c.Next()
 			return
 		}
