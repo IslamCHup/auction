@@ -113,10 +113,6 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		return errors.New("bid cannot be created after the lot end date")
 	}
 
-	if bidModel.Amount%lotModel.MinStep != 0 {
-		return errors.New("bid amount must be a multiple of the lot min step")
-	}
-
 	minRequiredAmount := lotModel.CurrentPrice + lotModel.MinStep
 	if bidModel.Amount < minRequiredAmount {
 		return fmt.Errorf("bid amount must be at least %d (current price %d + min step %d)",

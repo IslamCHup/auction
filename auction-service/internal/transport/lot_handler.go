@@ -2,9 +2,11 @@ package transport
 
 import (
 	"auction-service/internal/models"
+	"auction-service/internal/repository"
 	"auction-service/internal/services"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,10 +50,58 @@ func paginationParams(c *gin.Context) (page int, limit int) {
 	return page, limit
 }
 
+func parseFilters(c *gin.Context) *repository.LotFilters {
+	filters := &repository.LotFilters{}
+
+	// Фильтр по статусу
+	if statusStr := c.Query("status"); statusStr != "" {
+		status := models.LotStatus(statusStr)
+		if status == models.LotStatusDraft || status == models.LotStatusActive || status == models.LotStatusCompleted {
+			filters.Status = &status
+		}
+	}
+
+	// Фильтр по минимальной цене
+	if minPriceStr := c.Query("min_price"); minPriceStr != "" {
+		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil && minPrice >= 0 {
+			filters.MinPrice = &minPrice
+		}
+	}
+
+	// Фильтр по максимальной цене
+	if maxPriceStr := c.Query("max_price"); maxPriceStr != "" {
+		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil && maxPrice >= 0 {
+			filters.MaxPrice = &maxPrice
+		}
+	}
+
+	// Фильтр по минимальной дате окончания
+	if minEndDateStr := c.Query("min_end_date"); minEndDateStr != "" {
+		if minEndDate, err := time.Parse(time.RFC3339, minEndDateStr); err == nil {
+			filters.MinEndDate = &minEndDate
+		}
+	}
+
+	// Фильтр по максимальной дате окончания
+	if maxEndDateStr := c.Query("max_end_date"); maxEndDateStr != "" {
+		if maxEndDate, err := time.Parse(time.RFC3339, maxEndDateStr); err == nil {
+			filters.MaxEndDate = &maxEndDate
+		}
+	}
+
+	// Если фильтры не заданы, возвращаем nil (будет использован фильтр по умолчанию в service - только active)
+	if filters.Status == nil && filters.MinPrice == nil && filters.MaxPrice == nil && filters.MinEndDate == nil && filters.MaxEndDate == nil {
+		return nil
+	}
+
+	return filters
+}
+
 func (h *LotHandler) GetAllLots(c *gin.Context) {
 	page, limit := paginationParams(c)
 	offset := (page - 1) * limit
-	lots, err := h.service.GetAllLots(offset, limit)
+	filters := parseFilters(c)
+	lots, err := h.service.GetAllLots(offset, limit, filters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
