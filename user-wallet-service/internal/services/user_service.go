@@ -34,9 +34,7 @@ func NewUserService(repo repository.UserRepository, jwt JWTService, logger *slog
 
 func (s *userService) Register(email, password string, role model.Role) (*model.User, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
-	if s.logger != nil {
-		s.logger.Info("service register attempt", "email", email, "role", string(role))
-	}
+	s.logger.Info("service register attempt", "email", email, "role", string(role))
 	if email == "" || len(password) < s.minPassLn {
 		return nil, "", errors.New("invalid email or password too short")
 	}
@@ -48,9 +46,7 @@ func (s *userService) Register(email, password string, role model.Role) (*model.
 	}
 	exists, err := s.repo.FindByEmail(email)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service register find by email failed", "email", email, "err", err.Error())
-		}
+		s.logger.Error("service register find by email failed", "email", email, "err", err.Error())
 		return nil, "", err
 	}
 	if exists != nil {
@@ -62,34 +58,24 @@ func (s *userService) Register(email, password string, role model.Role) (*model.
 	}
 	u := &model.User{Email: email, PasswordHash: string(hash), Role: role}
 	if err := s.repo.Create(u); err != nil {
-		if s.logger != nil {
-			s.logger.Error("service create user failed", "email", email, "err", err.Error())
-		}
+		s.logger.Error("service create user failed", "email", email, "err", err.Error())
 		return nil, "", err
 	}
 	token, err := s.jwt.GenerateToken(u, s.tokenTTL)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service generate token failed", "user_id", u.ID, "err", err.Error())
-		}
+		s.logger.Error("service generate token failed", "user_id", u.ID, "err", err.Error())
 		return nil, "", err
 	}
-	if s.logger != nil {
-		s.logger.Info("service user registered", "user_id", u.ID, "email", u.Email)
-	}
+	s.logger.Info("service user registered", "user_id", u.ID, "email", u.Email)
 	return u, token, nil
 }
 
 func (s *userService) Login(email, password string) (*model.User, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
-	if s.logger != nil {
-		s.logger.Info("service login attempt", "email", email)
-	}
+	s.logger.Info("service login attempt", "email", email)
 	u, err := s.repo.FindByEmail(email)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service login find failed", "email", email, "err", err.Error())
-		}
+		s.logger.Error("service login find failed", "email", email, "err", err.Error())
 		return nil, "", err
 	}
 	if u == nil {
@@ -100,37 +86,27 @@ func (s *userService) Login(email, password string) (*model.User, string, error)
 	}
 	token, err := s.jwt.GenerateToken(u, s.tokenTTL)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service generate token failed", "user_id", u.ID, "err", err.Error())
-		}
+		s.logger.Error("service generate token failed", "user_id", u.ID, "err", err.Error())
 		return nil, "", err
 	}
-	if s.logger != nil {
-		s.logger.Info("service login success", "user_id", u.ID)
-	}
+	s.logger.Info("service login success", "user_id", u.ID)
 	return u, token, nil
 }
 
 func (s *userService) GetByID(id uint) (*model.User, error) {
-	if s.logger != nil {
-		s.logger.Info("service get user by id", "id", id)
-	}
+	s.logger.Info("service get user by id", "id", id)
 	return s.repo.FindByID(id)
 }
 
 func (s *userService) UpdateProfile(id uint, fullName, email string) (*model.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
-	if s.logger != nil {
-		s.logger.Info("service update profile attempt", "user_id", id, "email", email)
-	}
+	s.logger.Info("service update profile attempt", "user_id", id, "email", email)
 	if email == "" {
 		return nil, errors.New("invalid email")
 	}
 	u, err := s.repo.FindByID(id)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service find by id failed", "user_id", id, "err", err.Error())
-		}
+		s.logger.Error("service find by id failed", "user_id", id, "err", err.Error())
 		return nil, err
 	}
 	if u == nil {
@@ -149,13 +125,9 @@ func (s *userService) UpdateProfile(id uint, fullName, email string) (*model.Use
 	u.FullName = strings.TrimSpace(fullName)
 	u.Email = email
 	if err := s.repo.Update(u); err != nil {
-		if s.logger != nil {
-			s.logger.Error("service update profile failed", "user_id", id, "err", err.Error())
-		}
+		s.logger.Error("service update profile failed", "user_id", id, "err", err.Error())
 		return nil, err
 	}
-	if s.logger != nil {
-		s.logger.Info("service profile updated", "user_id", u.ID)
-	}
+	s.logger.Info("service profile updated", "user_id", u.ID)
 	return u, nil
 }

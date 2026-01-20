@@ -30,37 +30,27 @@ func NewWalletService(repo repository.WalletRepository, db *gorm.DB, logger *slo
 }
 
 func (s *walletService) GetWallet(userID uint) (*models.Wallet, error) {
-	if s.logger != nil {
-		s.logger.Info("service get wallet", "user_id", userID)
-	}
+	s.logger.Info("service get wallet", "user_id", userID)
 	// убедимся, что кошелек существует
 	wallet, err := s.repo.GetByUserID(userID)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service get wallet failed", "user_id", userID, "err", err.Error())
-		}
+		s.logger.Error("service get wallet failed", "user_id", userID, "err", err.Error())
 		return nil, err
 	}
 	if wallet == nil {
 		wallet = &models.Wallet{UserID: userID, Balance: 0, FrozenBalance: 0}
 		if err := s.repo.CreateWallet(wallet); err != nil {
-			if s.logger != nil {
-				s.logger.Error("service create wallet failed", "user_id", userID, "err", err.Error())
-			}
+			s.logger.Error("service create wallet failed", "user_id", userID, "err", err.Error())
 			return nil, err
 		}
-		if s.logger != nil {
-			s.logger.Info("service wallet created", "user_id", userID, "wallet_id", wallet.ID)
-		}
+		s.logger.Info("service wallet created", "user_id", userID, "wallet_id", wallet.ID)
 	}
 	return wallet, nil
 }
 
 func (s *walletService) Deposit(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
 
-	if s.logger != nil {
-		s.logger.Info("service deposit attempt", "user_id", userID, "amount", amount)
-	}
+	s.logger.Info("service deposit attempt", "user_id", userID, "amount", amount)
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -109,17 +99,13 @@ func (s *walletService) Deposit(userID uint, amount int64, description string) (
 		}
 		return nil, nil, err
 	}
-	if s.logger != nil {
-		s.logger.Info("service deposit success", "user_id", userID, "transaction_id", tran.ID)
-	}
+	s.logger.Info("service deposit success", "user_id", userID, "transaction_id", tran.ID)
 	return result, tran, nil
 }
 
 func (s *walletService) Freeze(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
 
-	if s.logger != nil {
-		s.logger.Info("service freeze attempt", "user_id", userID, "amount", amount)
-	}
+	s.logger.Info("service freeze attempt", "user_id", userID, "amount", amount)
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -169,22 +155,16 @@ func (s *walletService) Freeze(userID uint, amount int64, description string) (*
 		return nil
 	})
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service freeze failed", "user_id", userID, "err", err.Error())
-		}
+		s.logger.Error("service freeze failed", "user_id", userID, "err", err.Error())
 		return nil, nil, err
 	}
-	if s.logger != nil {
-		s.logger.Info("service freeze success", "user_id", userID, "transaction_id", tran.ID)
-	}
+	s.logger.Info("service freeze success", "user_id", userID, "transaction_id", tran.ID)
 	return result, tran, nil
 }
 
 func (s *walletService) Unfreeze(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
 
-	if s.logger != nil {
-		s.logger.Info("service unfreeze attempt", "user_id", userID, "amount", amount)
-	}
+	s.logger.Info("service unfreeze attempt", "user_id", userID, "amount", amount)
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -240,9 +220,7 @@ func (s *walletService) Unfreeze(userID uint, amount int64, description string) 
 
 func (s *walletService) Charge(userID uint, amount int64, description string) (*models.Wallet, *models.Transaction, error) {
 
-	if s.logger != nil {
-		s.logger.Info("service charge attempt", "user_id", userID, "amount", amount)
-	}
+	s.logger.Info("service charge attempt", "user_id", userID, "amount", amount)
 
 	var result *models.Wallet
 	var tran *models.Transaction
@@ -292,20 +270,14 @@ func (s *walletService) Charge(userID uint, amount int64, description string) (*
 		return nil
 	})
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("service charge failed", "user_id", userID, "err", err.Error())
-		}
+		s.logger.Error("service charge failed", "user_id", userID, "err", err.Error())
 		return nil, nil, err
 	}
-	if s.logger != nil {
-		s.logger.Info("service charge success", "user_id", userID, "transaction_id", tran.ID)
-	}
+	s.logger.Info("service charge success", "user_id", userID, "transaction_id", tran.ID)
 	return result, tran, nil
 }
 
 func (s *walletService) ListTransactions(userID uint, limit, offset int) ([]models.Transaction, error) {
-	if s.logger != nil {
-		s.logger.Info("service list transactions", "user_id", userID, "limit", limit, "offset", offset)
-	}
+	s.logger.Info("service list transactions", "user_id", userID, "limit", limit, "offset", offset)
 	return s.repo.ListTransactions(userID, limit, offset)
 }
