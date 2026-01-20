@@ -27,7 +27,6 @@ func main() {
 
 	r.Use(cors.Default())
 	r.Use(middleware.TimeoutMiddleware())
-	r.Use(middleware.UserRateLimitMiddleware())
 
 	r.Any("/api/auth/*path", proxy.MakeProxyHandler(authProxy))
 	r.Any("/api/users/*path", proxy.MakeProxyHandler(authProxy))

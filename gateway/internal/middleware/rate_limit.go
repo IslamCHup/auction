@@ -48,8 +48,8 @@ func (tb *TokenBucket) Allow() bool {
 	return false
 }
 
-var UserBucket sync.Map
-var BidBucket sync.Map
+var userBucket sync.Map
+var bidBucket sync.Map
 
 func getOrCreateBucket(store *sync.Map, userID uint64, capacity int, refillRate float64) *TokenBucket {
 	actual, _ := store.LoadOrStore(userID, NewTokenBucket(capacity, refillRate))
@@ -64,7 +64,7 @@ func UserRateLimitMiddleware() gin.HandlerFunc {
 			return
 		}
 		uid := uidAny.(uint64)
-		bucket := getOrCreateBucket(&UserBucket, uid, 100, 100.0/60.0)
+		bucket := getOrCreateBucket(&userBucket, uid, 100, 100.0/60.0)
 
 		if !bucket.Allow() {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
@@ -88,7 +88,7 @@ func BidRateLimitMiddleware() gin.HandlerFunc {
 			return
 		}
 		uid := uidAny.(uint64)
-		bucket := getOrCreateBucket(&BidBucket, uid, 10, 10.0/60.0)
+		bucket := getOrCreateBucket(&bidBucket, uid, 10, 10.0/60.0)
 
 		if !bucket.Allow() {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
