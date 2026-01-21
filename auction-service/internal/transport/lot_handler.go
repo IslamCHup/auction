@@ -63,14 +63,14 @@ func parseFilters(c *gin.Context) *repository.LotFilters {
 
 	// Фильтр по минимальной цене
 	if minPriceStr := c.Query("min_price"); minPriceStr != "" {
-		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil && minPrice >= 0 {
+		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil && minPrice > 0 {
 			filters.MinPrice = &minPrice
 		}
 	}
 
 	// Фильтр по максимальной цене
 	if maxPriceStr := c.Query("max_price"); maxPriceStr != "" {
-		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil && maxPrice >= 0 {
+		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil && maxPrice > 0 {
 			filters.MaxPrice = &maxPrice
 		}
 	}

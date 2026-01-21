@@ -35,14 +35,6 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 }
 
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
-	// Валидация базовых полей (проверка на обязательность уже в JSON тегах)
-	if lotModel.StartPrice <= 0 {
-		return errors.New("start price must be greater than 0")
-	}
-	if lotModel.MinStep <= 0 {
-		return errors.New("min step must be greater than 0")
-	}
-
 	// Установка значений по умолчанию
 	lotModel.Status = models.LotStatusDraft
 	if lotModel.StartDate.IsZero() {
@@ -53,7 +45,7 @@ func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 	}
 
 	// Валидация бизнес-правил после установки значений по умолчанию
-	if lotModel.EndDate.Before(lotModel.StartDate) || lotModel.EndDate.Equal(lotModel.StartDate) {
+	if lotModel.EndDate.Before(lotModel.StartDate) {
 		return errors.New("end date must be after start date")
 	}
 	if lotModel.StartDate.Before(time.Now()) {
@@ -122,13 +114,6 @@ func (s *lotService) UpdateLot(lotModel *models.LotModel) error {
 		return errors.New("only draft lots can be updated")
 	}
 
-	// Валидация бизнес-правил
-	if lotModel.StartPrice <= 0 {
-		return errors.New("start price must be greater than 0")
-	}
-	if lotModel.MinStep <= 0 {
-		return errors.New("min step must be greater than 0")
-	}
 	if lotModel.EndDate.Before(lotModel.StartDate) {
 		return errors.New("end date must be after start date")
 	}
@@ -137,11 +122,6 @@ func (s *lotService) UpdateLot(lotModel *models.LotModel) error {
 	}
 	if lotModel.EndDate.Before(time.Now()) {
 		return errors.New("lot end date cannot be in the past")
-	}
-
-	// Обновить текущую цену если стартовая цена изменилась
-	if lotModel.CurrentPrice == 0 || lotModel.CurrentPrice < lotModel.StartPrice {
-		lotModel.CurrentPrice = lotModel.StartPrice
 	}
 
 	return s.repository.UpdateLot(lotModel)
