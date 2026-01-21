@@ -9,15 +9,34 @@ import (
 	"github.com/IBM/sarama"
 )
 
+// BidPlacedEvent — событие о новой ставке, которое слушает notification-service.
+// Структура должна совпадать с notification-service/internal/models.BidPlacedEvent.
+type BidPlacedEvent struct {
+	LotID            uint64 `json:"lot_id"`
+	PreviousLeaderID uint64 `json:"previous_leader_id"`
+	NewBidAmount     int64  `json:"new_bid_amount"`
+}
+
+// LotCompletedEvent — событие о завершении аукциона.
+// Структура должна совпадать с notification-service/internal/models.LotCompletedEvent.
+type LotCompletedEvent struct {
+	LotID      uint64   `json:"lot_id"`
+	Winner     uint64   `json:"winner"`
+	FinalPrice int64    `json:"final_price"`
+	LoserIDs   []uint64 `json:"loser_ids"`
+}
+
 type Producer struct {
 	producer sarama.SyncProducer
 }
 
+// NewProducer создаёт Kafka producer. Конфигурация брокера берётся из KAFKA_BROKERS
+// и по умолчанию совместима с docker-compose (kafka:9092).
 func NewProducer() (*Producer, error) {
 	brokerStr := os.Getenv("KAFKA_BROKERS")
 	var brokers []string
 	if brokerStr == "" {
-		brokers = []string{"localhost:9092"}
+		brokers = []string{"kafka:9092"}
 	} else {
 		brokers = []string{brokerStr}
 	}
@@ -36,6 +55,8 @@ func NewProducer() (*Producer, error) {
 	return &Producer{producer: producer}, nil
 }
 
+// SendMessage отправляет JSON-сообщение в указанный топик.
+// Используется существующим кодом сервисов.
 func (p *Producer) SendMessage(topic string, key string, value interface{}) error {
 	if p == nil || p.producer == nil {
 		return fmt.Errorf("producer is not initialized")

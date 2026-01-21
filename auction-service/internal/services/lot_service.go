@@ -172,13 +172,16 @@ func (s *lotService) CompleteExpiredLots() error {
 
 		// Отправка события в Kafka о завершении лота
 		if s.kafkaProducer != nil {
-			event := map[string]interface{}{
-				"lot_id":      lot.ID,
-				"winner_id":   lot.WinnerID,
-				"final_price": lot.CurrentPrice,
+			// Пока у нас нет списка всех участников аукциона, LoserIDs оставляем пустым.
+			event := kafka.LotCompletedEvent{
+				LotID:      uint64(lot.ID),
+				Winner:     lot.WinnerID,
+				FinalPrice: lot.CurrentPrice,
+				LoserIDs:   nil,
 			}
-			if err := s.kafkaProducer.SendMessage("auction.lot.completed", fmt.Sprintf("%d", lot.ID), event); err != nil {
-				log.Printf("WARNING: failed to send auction.lot.completed event to Kafka: %v", err)
+
+			if err := s.kafkaProducer.SendMessage("lot_completed", fmt.Sprintf("%d", lot.ID), event); err != nil {
+				log.Printf("WARNING: failed to send lot_completed event to Kafka: %v", err)
 			}
 		}
 	}
