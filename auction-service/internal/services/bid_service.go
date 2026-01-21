@@ -113,10 +113,6 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		return errors.New("bid cannot be created after the lot end date")
 	}
 
-	if bidModel.Amount%lotModel.MinStep != 0 {
-		return errors.New("bid amount must be a multiple of the lot min step")
-	}
-
 	minRequiredAmount := lotModel.CurrentPrice + lotModel.MinStep
 	if bidModel.Amount < minRequiredAmount {
 		return fmt.Errorf("bid amount must be at least %d (current price %d + min step %d)",
@@ -181,14 +177,16 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		if previousBid != nil {
 			previousLeaderID = uint64(previousBid.UserID)
 		}
-		event := map[string]interface{}{
-			"lot_id":             bidModel.LotModelID,
-			"bidder_id":          bidModel.UserID,
-			"amount":             bidModel.Amount,
-			"previous_leader_id": previousLeaderID,
+
+		// Формируем событие в формате, который ожидает notification-service.
+		event := kafka.BidPlacedEvent{
+			LotID:            uint64(bidModel.LotModelID),
+			PreviousLeaderID: previousLeaderID,
+			NewBidAmount:     bidModel.Amount,
 		}
-		if err := s.kafkaProducer.SendMessage("auction.bid.placed", fmt.Sprintf("%d", bidModel.LotModelID), event); err != nil {
-			log.Printf("WARNING: failed to send auction.bid.placed event to Kafka: %v", err)
+
+		if err := s.kafkaProducer.SendMessage("bid_placed", fmt.Sprintf("%d", bidModel.LotModelID), event); err != nil {
+			log.Printf("WARNING: failed to send bid_placed event to Kafka: %v", err)
 		}
 	}
 

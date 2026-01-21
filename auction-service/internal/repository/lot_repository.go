@@ -7,11 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
+type LotFilters struct {
+	Status     *models.LotStatus
+	MinPrice   *int64
+	MaxPrice   *int64
+	MinEndDate *time.Time
+	MaxEndDate *time.Time
+}
+
 type LotRepository interface {
 	CreateLot(lotModel *models.LotModel) error
 	UpdateLot(lotModel *models.LotModel) error
 	GetLotByID(id uint64) (*models.LotModel, error)
-	GetAllLots(offset int, limit int) ([]models.LotModel, error)
+	GetAllLots(offset int, limit int, filters *LotFilters) ([]models.LotModel, error)
 	GetAllLotsByUser(userID uint64) ([]models.LotModel, error)
 	GetExpiredActiveLots() ([]models.LotModel, error)
 }
@@ -41,9 +49,30 @@ func (r *lotRepository) GetLotByID(id uint64) (*models.LotModel, error) {
 	return &lotModel, nil
 }
 
-func (r *lotRepository) GetAllLots(offset int, limit int) ([]models.LotModel, error) {
+func (r *lotRepository) GetAllLots(offset int, limit int, filters *LotFilters) ([]models.LotModel, error) {
 	var lots []models.LotModel
-	if err := r.db.Offset(offset).Limit(limit).Find(&lots).Error; err != nil {
+	query := r.db
+
+	// Применяем фильтры, если они заданы
+	if filters != nil {
+		if filters.Status != nil {
+			query = query.Where("status = ?", *filters.Status)
+		}
+		if filters.MinPrice != nil {
+			query = query.Where("current_price >= ?", *filters.MinPrice)
+		}
+		if filters.MaxPrice != nil {
+			query = query.Where("current_price <= ?", *filters.MaxPrice)
+		}
+		if filters.MinEndDate != nil {
+			query = query.Where("end_date >= ?", *filters.MinEndDate)
+		}
+		if filters.MaxEndDate != nil {
+			query = query.Where("end_date <= ?", *filters.MaxEndDate)
+		}
+	}
+
+	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&lots).Error; err != nil {
 		return nil, err
 	}
 	return lots, nil
@@ -51,7 +80,7 @@ func (r *lotRepository) GetAllLots(offset int, limit int) ([]models.LotModel, er
 
 func (r *lotRepository) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
 	var lots []models.LotModel
-	if err := r.db.Where("user_id = ?", userID).Find(&lots).Error; err != nil {
+	if err := r.db.Where("seller_id = ?", userID).Find(&lots).Error; err != nil {
 		return nil, err
 	}
 	return lots, nil
