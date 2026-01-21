@@ -63,15 +63,21 @@ func parseFilters(c *gin.Context) *repository.LotFilters {
 
 	// Фильтр по минимальной цене
 	if minPriceStr := c.Query("min_price"); minPriceStr != "" {
-		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil && minPrice > 0 {
-			filters.MinPrice = &minPrice
+		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil {
+			if minPrice > 0 {
+				filters.MinPrice = &minPrice
+			}
+			// minPrice <= 0 трактуем как "фильтр не задан", поэтому просто не устанавливаем его
 		}
 	}
 
 	// Фильтр по максимальной цене
 	if maxPriceStr := c.Query("max_price"); maxPriceStr != "" {
-		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil && maxPrice > 0 {
-			filters.MaxPrice = &maxPrice
+		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil {
+			if maxPrice > 0 {
+				filters.MaxPrice = &maxPrice
+			}
+			// maxPrice <= 0 трактуем как "фильтр не задан"
 		}
 	}
 

@@ -88,12 +88,8 @@ func (s *lotService) GetAllLots(offset int, limit int, filters *repository.LotFi
 	// Бизнес-правило: по умолчанию показываем только активные лоты
 	// Это валидация/правило на уровне service, а не repository
 	if filters == nil {
-		filters = &repository.LotFilters{
-			Status: func() *models.LotStatus {
-				status := models.LotStatusActive
-				return &status
-			}(),
-		}
+		status := models.LotStatusActive
+		filters = &repository.LotFilters{Status: &status}
 	} else if filters.Status == nil {
 		// Если фильтры заданы, но статус не указан, по умолчанию показываем активные
 		status := models.LotStatusActive

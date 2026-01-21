@@ -16,8 +16,8 @@ type LotModel struct {
 	Description string `json:"description" binding:"required,min=1" gorm:"not null"`
 
 	// Даты можно не передавать — сервис подставит значения по умолчанию.
-	StartDate time.Time `json:"start_date,omitempty" gorm:"not null"`
-	EndDate   time.Time `json:"end_date,omitempty" gorm:"not null"`
+	StartDate time.Time `json:"start_date,omitempty" binding:"omitempty" gorm:"not null"`
+	EndDate   time.Time `json:"end_date,omitempty" binding:"omitempty" gorm:"not null"`
 
 	StartPrice   int64 `json:"start_price" binding:"required,gte=1" gorm:"not null"`
 	CurrentPrice int64 `json:"current_price" gorm:"not null"`
