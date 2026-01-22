@@ -41,6 +41,8 @@ func main() {
 	tutu.GET("/lots/:id", lotHandler.GetLotByID)
 	tutu.PUT("/lots/:id", lotHandler.UpdateLot)
 	tutu.POST("/lots/:id/publish", lotHandler.PublishLot)
+	// Админ/служебный эндпойнт для немедленного завершения истекших лотов
+	tutu.POST("/lots/complete-expired", lotHandler.CompleteExpired)
 	tutu.POST("/lots/:id/bids", bidHandler.CreateBid)
 	tutu.GET("/lots/:id/bids", bidHandler.GetAllBids)
 	tutu.GET("/users/:id/lots", lotHandler.GetAllLotsByUser)

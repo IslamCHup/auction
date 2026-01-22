@@ -218,3 +218,12 @@ func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, lots)
 }
+
+// CompleteExpired запускает немедленную проверку и завершение истекших лотов
+func (h *LotHandler) CompleteExpired(c *gin.Context) {
+	if err := h.service.CompleteExpiredLots(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Expired lots processed"})
+}
