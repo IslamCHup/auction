@@ -18,6 +18,8 @@ type LotService interface {
 	UpdateLot(lotModel *models.LotModel) error
 	GetAllLotsByUser(userID uint64) ([]models.LotModel, error)
 	CompleteExpiredLots() error
+	// ForceCompleteLot — принудительно завершить лот (для админ-теста)
+	ForceCompleteLot(id uint64) error
 }
 
 type lotService struct {
@@ -33,6 +35,7 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 		kafkaProducer: kafkaProducer,
 	}
 }
+
 //19:17:56
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 	// Установка значений по умолчанию
@@ -164,6 +167,38 @@ func (s *lotService) CompleteExpiredLots() error {
 			if err := s.kafkaProducer.SendMessage("lot_completed", fmt.Sprintf("%d", lot.ID), event); err != nil {
 				log.Printf("WARNING: failed to send lot_completed event to Kafka: %v", err)
 			}
+		}
+	}
+	return nil
+}
+
+// ForceCompleteLot принудительно завершает лот, независимо от дат
+func (s *lotService) ForceCompleteLot(id uint64) error {
+	lot, err := s.repository.GetLotByID(id)
+	if err != nil {
+		return err
+	}
+
+	lot.Status = models.LotStatusCompleted
+	if lot.CurrentBidID != 0 {
+		bid, err := s.bidRepository.GetBidByID(lot.CurrentBidID)
+		if err == nil && bid != nil {
+			lot.WinnerID = uint64(bid.UserID)
+		}
+	}
+	if err := s.repository.UpdateLot(lot); err != nil {
+		return err
+	}
+
+	if s.kafkaProducer != nil {
+		event := kafka.LotCompletedEvent{
+			LotID:      uint64(lot.ID),
+			Winner:     lot.WinnerID,
+			FinalPrice: lot.CurrentPrice,
+			LoserIDs:   nil,
+		}
+		if err := s.kafkaProducer.SendMessage("lot_completed", fmt.Sprintf("%d", lot.ID), event); err != nil {
+			log.Printf("WARNING: failed to send lot_completed event to Kafka: %v", err)
 		}
 	}
 	return nil

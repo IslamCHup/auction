@@ -227,3 +227,18 @@ func (h *LotHandler) CompleteExpired(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Expired lots processed"})
 }
+
+// ForceComplete принудительно завершает конкретный лот (для тестирования)
+func (h *LotHandler) ForceComplete(c *gin.Context) {
+	id := c.Param("id")
+	idUint, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lot id"})
+		return
+	}
+	if err := h.service.ForceCompleteLot(idUint); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Lot forcibly completed"})
+}
