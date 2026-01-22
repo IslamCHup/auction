@@ -33,7 +33,7 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 		kafkaProducer: kafkaProducer,
 	}
 }
-
+//19:17:56
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 	// Установка значений по умолчанию
 	lotModel.Status = models.LotStatusDraft

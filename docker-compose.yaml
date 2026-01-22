@@ -89,6 +89,7 @@ services:
       - "8083:8080"
     environment:
       PORT: 8080
+      LOG_LEVEL: debug
       KAFKA_BROKERS: kafka:9092
       DATABASE_URL: host=postgres user=postgres password=12345 dbname=app_db port=5432 sslmode=disable
     depends_on:

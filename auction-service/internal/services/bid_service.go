@@ -193,20 +193,13 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		}
 	}
 
-	// Отправка события в Kafka о создании ставки
-	if s.kafkaProducer != nil {
-		previousLeaderID := uint64(0)
-		if previousBid != nil {
-			previousLeaderID = uint64(previousBid.UserID)
-		}
-
-		// Формируем событие в формате, который ожидает notification-service.
+	// Отправка события в Kafka о создании ставки (только если был предыдущий лидер)
+	if s.kafkaProducer != nil && previousBid != nil {
 		event := kafka.BidPlacedEvent{
 			LotID:            uint64(bidModel.LotModelID),
-			PreviousLeaderID: previousLeaderID,
+			PreviousLeaderID: uint64(previousBid.UserID),
 			NewBidAmount:     bidModel.Amount,
 		}
-
 		if err := s.kafkaProducer.SendMessage("bid_placed", fmt.Sprintf("%d", bidModel.LotModelID), event); err != nil {
 			log.Printf("WARNING: failed to send bid_placed event to Kafka: %v", err)
 		}

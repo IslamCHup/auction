@@ -25,8 +25,8 @@ func NewNotificationService(repo repository.NotificationRepository, logger *slog
 	return &notificationService{repo: repo, logger: logger}
 }
 
-func (s *notificationService) Create(req *models.Notification) error{
-	if err := s.repo.CreateNotification(req); err != nil{
+func (s *notificationService) Create(req *models.Notification) error {
+	if err := s.repo.CreateNotification(req); err != nil {
 		return err
 	}
 	return nil
@@ -65,6 +65,11 @@ func (s *notificationService) CreateWinnerLoserNotification(event *models.LotCom
 }
 
 func (s *notificationService) CreateBidPlacedNotification(event *models.BidPlacedEvent) error {
+	// Если предыдущего лидера не было (первая ставка) — уведомлять некого
+	if event.PreviousLeaderID == 0 {
+		s.logger.Info("skip bid_outbid notification: no previous leader", "lot_id", event.LotID)
+		return nil
+	}
 	bidPlaced := models.Notification{
 		UserID:  event.PreviousLeaderID,
 		LotID:   event.LotID,
