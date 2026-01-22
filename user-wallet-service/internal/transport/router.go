@@ -26,14 +26,12 @@ func SetupRouter(
 		}
 
 		users := api.Group("/users")
-		users.Use(AuthMiddleware(jwt))
 		{
 			users.GET("/me", authHandler.Me)
 			users.PUT("/me", authHandler.UpdateMe)
 		}
 
 		wallet := api.Group("/wallet")
-		wallet.Use(AuthMiddleware(jwt))
 		{
 			wallet.GET("/", walletHandler.GetWallet)
 			wallet.POST("/deposit", walletHandler.WalletDeposit)
