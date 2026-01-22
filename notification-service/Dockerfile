@@ -8,7 +8,9 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o app .
+# В корне нет Go-файлов, main лежит в cmd/app,
+# поэтому явно собираем бинарь из этого пакета.
+RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
 
 # runtime stage
 FROM alpine:3.21

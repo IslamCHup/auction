@@ -1,5 +1,5 @@
 # Этап 1: Сборка
-FROM golang:1.25 AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN go mod download
 COPY . .
 
 # Собираем статически связанный бинарник
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
 
 # Этап 2: Запуск
 FROM alpine:3.19
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk --no-cache add ca-certificates
 
 # Копируем бинарник из этапа сборки
-COPY --from=builder /app/main .
+COPY --from=builder /app/app .
 
 # Переменные окружения
 ENV DB_HOST=my-postgres
@@ -31,4 +31,4 @@ ENV DB_PORT=5432
 
 EXPOSE 8080
 
-CMD ["./main"]
+CMD ["./app"]

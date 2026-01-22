@@ -15,7 +15,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   postgres:
-    image: postgres:18.1
+    image: postgres:16-alpine
     container_name: postgres
     ports:
       - "5432:5432"
@@ -38,12 +38,16 @@ services:
       - "8080:8080"
     environment:
       PORT: 8080
-      KAFKA_BROKERS: kafka:9092
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: app_db
+      # URLs внутренних сервисов для reverse proxy
+      # user-wallet-service (auth + wallet API)
+      AUTH_SERVICE_URL: http://user-wallet:8080/api/auth
+      WALLET_SERVICE_URL: http://user-wallet:8080/api/wallet
+      # auction-service (лот/ставки)
+      LOT_SERVICE_URL: http://auction:8081
+      # notification-service
+      NOTIFICATION_SERVICE_URL: http://notifications:8080
+      JWT_SECRET: ${JWT_SECRET}
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,8 +62,12 @@ services:
     environment:
       PORT: 8080
       KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: host=postgres user=postgres password=12345 dbname=app_db port=5432 sslmode=disable
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   user-wallet:
     build:
@@ -69,19 +77,28 @@ services:
     environment:
       PORT: 8080
       KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: host=postgres user=postgres password=12345 dbname=app_db port=5432 sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   notifications:
     build:
-      context: ./notifications-service
+      context: ./notification-service
     ports:
       - "8083:8080"
     environment:
       PORT: 8080
       KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: host=postgres user=postgres password=12345 dbname=app_db port=5432 sslmode=disable
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
