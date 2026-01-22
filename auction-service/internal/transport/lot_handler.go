@@ -190,10 +190,25 @@ func (h *LotHandler) GetLotByID(c *gin.Context) {
 }
 
 func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
-	userID := c.Param("id")
-	userIDUint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Сначала пробуем взять пользователя из заголовка X-User-Id, который проставляет gateway
+	var userIDUint uint64
+	if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+		if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil && parsed > 0 {
+			userIDUint = parsed
+		}
+	}
+	// Фоллбэк: если заголовка нет, используем path-параметр
+	if userIDUint == 0 {
+		userID := c.Param("id")
+		parsed, err := strconv.ParseUint(userID, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		userIDUint = parsed
+	}
+	if userIDUint == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	lots, err := h.service.GetAllLotsByUser(userIDUint)

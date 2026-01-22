@@ -85,10 +85,25 @@ func (h *BidHandler) GetAllBids(c *gin.Context) {
 }
 
 func (h *BidHandler) GetAllBidsByUser(c *gin.Context) {
-	userID := c.Param("id")
-	userIDUint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Сначала пробуем заголовок X-User-Id от gateway
+	var userIDUint uint64
+	if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+		if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil && parsed > 0 {
+			userIDUint = parsed
+		}
+	}
+	// Фоллбэк на path-параметр
+	if userIDUint == 0 {
+		userID := c.Param("id")
+		parsed, err := strconv.ParseUint(userID, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		userIDUint = parsed
+	}
+	if userIDUint == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	bids, err := h.service.GetAllBidsByUser(userIDUint)
