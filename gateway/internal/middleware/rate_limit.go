@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -58,12 +59,16 @@ func getOrCreateBucket(store *sync.Map, userID uint64, capacity int, refillRate 
 
 func UserRateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
 		uidAny, exist := c.Get("user_id")
 		if !exist {
 			c.Next()
 			return
 		}
 		uid := uidAny.(uint64)
+		
+		log.Println("JWT OK, user_id =", uid) //удалить
+
 		bucket := getOrCreateBucket(&userBucket, uid, 100, 100.0/60.0)
 
 		if !bucket.Allow() {

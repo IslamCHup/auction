@@ -2,6 +2,7 @@ package transport
 
 import (
 	"net/http"
+	"strconv"
 
 	"log/slog"
 	"user-service/internal/models"
@@ -64,8 +65,26 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
-	uidAny, _ := c.Get("user_id")
-	uid, _ := uidAny.(uint)
+	var uid uint
+	
+	// Попытка получить user_id из контекста (для прямых запросов)
+	uidAny, exists := c.Get("user_id")
+	if exists {
+		uid, _ = uidAny.(uint)
+	}
+	
+	// Если не найдено в контексте, попытаться из заголовка (для проксированных запросов)
+	if uid == 0 {
+		uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+		uid = uint(uidInt)
+	}
+	
+	if uid == 0 {
+		h.logger.Warn("me unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
 	h.logger.Info("me request", "user_id", uid)
 
 	u, err := h.users.GetByID(uid)
@@ -78,8 +97,25 @@ func (h *AuthHandler) Me(c *gin.Context) {
 }
 
 func (h *AuthHandler) UpdateMe(c *gin.Context) {
-	uidAny, _ := c.Get("user_id")
-	uid, _ := uidAny.(uint)
+	var uid uint
+	
+	// Попытка получить user_id из контекста (для прямых запросов)
+	uidAny, exists := c.Get("user_id")
+	if exists {
+		uid, _ = uidAny.(uint)
+	}
+	
+	// Если не найдено в контексте, попытаться из заголовка (для проксированных запросов)
+	if uid == 0 {
+		uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+		uid = uint(uidInt)
+	}
+	
+	if uid == 0 {
+		h.logger.Warn("update me unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	var req m.UpdateMeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

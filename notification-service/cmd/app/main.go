@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"notification-service/internal/config"
 	"notification-service/internal/db"
+	nkafka "notification-service/internal/kafka"
 	"notification-service/internal/repository"
 	"notification-service/internal/services"
 	"notification-service/internal/transport"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -40,6 +44,14 @@ func main() {
 	if port == "" {
 		port = "8083"
 	}
+	// Запускаем консьюмеров Kafka
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go nkafka.RunConsumerLotCompleted(ctx, logger, notificationService)
+	go nkafka.RunConsumerBidPlaced(ctx, logger, notificationService)
+
+	logger.Info("notification-service started", "port", port)
 	if err := r.Run(":" + port); err != nil {
 		logger.Error("failed to run server", "err", err)
 	}

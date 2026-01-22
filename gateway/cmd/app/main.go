@@ -29,15 +29,18 @@ func main() {
 	r.Use(middleware.TimeoutMiddleware())
 
 	r.Any("/api/auth/*path", proxy.MakeProxyHandler(authProxy))
-	r.Any("/api/users/*path", proxy.MakeProxyHandler(authProxy))
+	
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.UserRateLimitMiddleware())
+	protected.Use(middleware.BidRateLimitMiddleware())
+	protected.Any("/api/users/*path", proxy.MakeProxyHandler(authProxy))
+	
+	protected.Any("/api/lots", proxy.MakeProxyHandler(auctionProxy))
+	protected.Any("/api/lots/*path", proxy.MakeProxyHandler(auctionProxy))
 
-	r.Use(middleware.AuthMiddleware())
-	r.Use(middleware.UserRateLimitMiddleware())
-	r.Use(middleware.BidRateLimitMiddleware())
-
-	r.Any("/api/lots/*path", proxy.MakeProxyHandler(auctionProxy))
-	r.Any("/api/wallet/*path", proxy.MakeProxyHandler(walletProxy))
-	r.Any("/api/notifications/*path", proxy.MakeProxyHandler(notificationProxy))
+	protected.Any("/api/wallet/*path", proxy.MakeProxyHandler(walletProxy))
+	protected.Any("/api/notifications/*path", proxy.MakeProxyHandler(notificationProxy))
 
 	port := os.Getenv("PORT")
 	if port == "" {

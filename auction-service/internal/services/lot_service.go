@@ -37,18 +37,23 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 	// Установка значений по умолчанию
 	lotModel.Status = models.LotStatusDraft
+	nowUTC := time.Now().UTC()
 	if lotModel.StartDate.IsZero() {
-		lotModel.StartDate = time.Now()
+		lotModel.StartDate = nowUTC
+	} else {
+		lotModel.StartDate = lotModel.StartDate.UTC()
 	}
 	if lotModel.EndDate.IsZero() {
 		lotModel.EndDate = lotModel.StartDate.Add(24 * time.Hour)
+	} else {
+		lotModel.EndDate = lotModel.EndDate.UTC()
 	}
 
 	// Валидация бизнес-правил после установки значений по умолчанию
 	if lotModel.EndDate.Before(lotModel.StartDate) {
 		return errors.New("end date must be after start date")
 	}
-	if lotModel.StartDate.Before(time.Now()) {
+	if lotModel.StartDate.Before(nowUTC) {
 		return errors.New("start date cannot be in the past")
 	}
 

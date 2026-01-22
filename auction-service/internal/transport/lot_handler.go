@@ -123,16 +123,37 @@ func (h *LotHandler) UpdateLot(c *gin.Context) {
 		return
 	}
 
-	var lotModel models.LotModel
-	if err := c.ShouldBindJSON(&lotModel); err != nil {
+	var updateReq models.UpdateLotRequest
+	if err := c.ShouldBindJSON(&updateReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Установить ID из URL
-	lotModel.ID = uint(idUint)
+	// Получить существующий лот
+	lot, err := h.service.GetLotByID(idUint)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "lot not found"})
+		return
+	}
 
-	if err := h.service.UpdateLot(&lotModel); err != nil {
+	// Обновить только предоставленные поля
+	if updateReq.Title != nil {
+		lot.Title = *updateReq.Title
+	}
+	if updateReq.Description != nil {
+		lot.Description = *updateReq.Description
+	}
+	if updateReq.StartPrice != nil {
+		lot.StartPrice = *updateReq.StartPrice
+	}
+	if updateReq.MinStep != nil {
+		lot.MinStep = *updateReq.MinStep
+	}
+	if updateReq.EndDate != nil {
+		lot.EndDate = *updateReq.EndDate
+	}
+
+	if err := h.service.UpdateLot(lot); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

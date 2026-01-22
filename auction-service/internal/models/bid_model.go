@@ -5,6 +5,8 @@ type Bid struct {
 	Amount int64 `json:"amount" binding:"required,gte=1" gorm:"not null"`
 	UserID uint  `json:"user_id" binding:"required" gorm:"not null"`
 
-	LotModelID uint     `json:"lot_model_id" gorm:"not null"`
-	LotModel   LotModel `gorm:"foreignKey:LotModelID"`
+	// LotModelID заполняется из URL, не ожидается во входящем JSON
+	LotModelID uint `json:"-" gorm:"not null"`
+	// Не валидируем и не принимаем из JSON вложенную модель лота при создании ставки
+	LotModel *LotModel `json:"-" binding:"-" gorm:"foreignKey:LotModelID"`
 }

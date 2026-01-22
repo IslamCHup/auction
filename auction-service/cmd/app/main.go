@@ -34,15 +34,17 @@ func main() {
 
 	go startAuctionWorker(lotService)
 
-	server.POST("/lots", lotHandler.CreateLot)
-	server.GET("/lots", lotHandler.GetAllLots)
-	server.GET("/lots/:id", lotHandler.GetLotByID)
-	server.PUT("/lots/:id", lotHandler.UpdateLot)
-	server.POST("/lots/:id/publish", lotHandler.PublishLot)
-	server.POST("/lots/:id/bids", bidHandler.CreateBid)
-	server.GET("/lots/:id/bids", bidHandler.GetAllBids)
-	server.GET("/users/:id/lots", lotHandler.GetAllLotsByUser)
-	server.GET("/users/:id/bids", bidHandler.GetAllBidsByUser)
+	tutu := server.Group("/api")
+
+	tutu.POST("/lots", lotHandler.CreateLot)
+	tutu.GET("/lots", lotHandler.GetAllLots)
+	tutu.GET("/lots/:id", lotHandler.GetLotByID)
+	tutu.PUT("/lots/:id", lotHandler.UpdateLot)
+	tutu.POST("/lots/:id/publish", lotHandler.PublishLot)
+	tutu.POST("/lots/:id/bids", bidHandler.CreateBid)
+	tutu.GET("/lots/:id/bids", bidHandler.GetAllBids)
+	tutu.GET("/users/:id/lots", lotHandler.GetAllLotsByUser)
+	tutu.GET("/users/:id/bids", bidHandler.GetAllBidsByUser)
 
 	server.Run(":8081")
 }

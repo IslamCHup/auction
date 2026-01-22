@@ -22,7 +22,7 @@ func NewNotificationHandler(service services.NotificationService, logger *slog.L
 }
 
 func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
-	notifications := r.Group("/notifications")
+	notifications := r.Group("/api/notifications")
 	{
 		notifications.POST("/", h.Create)
 		notifications.PATCH("/:id/read", h.MarkAsRead)
@@ -70,6 +70,15 @@ func (h *NotificationHandler) ListNotification(c *gin.Context) {
 		}
 	}
 
+	// Фоллбэк: берем user_id из заголовка, который проставляет gateway
+	if filter.UserID == nil {
+		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+			if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil {
+				filter.UserID = &parsed
+			}
+		}
+	}
+
 	list, err := h.service.ListNotification(filter)
 	if err != nil {
 		h.logger.Error("list notifications", "err", err.Error())
@@ -105,16 +114,39 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 func (h *NotificationHandler) CountUnread(c *gin.Context) {
 	v, ok := c.Get("user_id")
 	if !ok {
-		h.logger.Error("user_id missing in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+		// fallback: берем из заголовка
+		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+			if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil {
+				v = parsed
+				ok = true
+			}
+		}
+		if !ok {
+			h.logger.Error("user_id missing in context and header")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
 	}
 
 	userID, ok := v.(uint64)
 	if !ok {
-		h.logger.Error("invalid user_id type", slog.Any("value", v))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
-		return
+		// попытка преобразовать, если это строка/число
+		switch t := v.(type) {
+		case int:
+			userID = uint64(t)
+		case string:
+			if parsed, err := strconv.ParseUint(t, 10, 64); err == nil {
+				userID = parsed
+			} else {
+				h.logger.Error("invalid user_id type", slog.Any("value", v))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+				return
+			}
+		default:
+			h.logger.Error("invalid user_id type", slog.Any("value", v))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+			return
+		}
 	}
 
 	count, err := h.service.CountUnread(userID)

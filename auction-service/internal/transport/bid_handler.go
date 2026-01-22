@@ -34,9 +34,16 @@ func (h *BidHandler) CreateBid(c *gin.Context) {
 
 	// Установить LotModelID из URL и время создания
 	bidModel.LotModelID = uint(lotIDUint)
-	if bidModel.CreatedAt.IsZero() {
-		bidModel.CreatedAt = time.Now()
+	// Если user_id не передан в теле, возьмем из заголовка X-User-Id, который проставляет gateway
+	if bidModel.UserID == 0 {
+		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+			if uidParsed, convErr := strconv.Atoi(uidStr); convErr == nil && uidParsed > 0 {
+				bidModel.UserID = uint(uidParsed)
+			}
+		}
 	}
+	// Фиксируем время создания на стороне сервера в UTC, чтобы избежать проблем TZ
+	bidModel.CreatedAt = time.Now().UTC()
 
 	err = h.service.CreateBid(&bidModel)
 	if err != nil {
