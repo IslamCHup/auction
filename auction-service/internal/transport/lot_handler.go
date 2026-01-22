@@ -123,16 +123,37 @@ func (h *LotHandler) UpdateLot(c *gin.Context) {
 		return
 	}
 
-	var lotModel models.LotModel
-	if err := c.ShouldBindJSON(&lotModel); err != nil {
+	var updateReq models.UpdateLotRequest
+	if err := c.ShouldBindJSON(&updateReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Установить ID из URL
-	lotModel.ID = uint(idUint)
+	// Получить существующий лот
+	lot, err := h.service.GetLotByID(idUint)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "lot not found"})
+		return
+	}
 
-	if err := h.service.UpdateLot(&lotModel); err != nil {
+	// Обновить только предоставленные поля
+	if updateReq.Title != nil {
+		lot.Title = *updateReq.Title
+	}
+	if updateReq.Description != nil {
+		lot.Description = *updateReq.Description
+	}
+	if updateReq.StartPrice != nil {
+		lot.StartPrice = *updateReq.StartPrice
+	}
+	if updateReq.MinStep != nil {
+		lot.MinStep = *updateReq.MinStep
+	}
+	if updateReq.EndDate != nil {
+		lot.EndDate = *updateReq.EndDate
+	}
+
+	if err := h.service.UpdateLot(lot); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -169,10 +190,25 @@ func (h *LotHandler) GetLotByID(c *gin.Context) {
 }
 
 func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
-	userID := c.Param("id")
-	userIDUint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Сначала пробуем взять пользователя из заголовка X-User-Id, который проставляет gateway
+	var userIDUint uint64
+	if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
+		if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil && parsed > 0 {
+			userIDUint = parsed
+		}
+	}
+	// Фоллбэк: если заголовка нет, используем path-параметр
+	if userIDUint == 0 {
+		userID := c.Param("id")
+		parsed, err := strconv.ParseUint(userID, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		userIDUint = parsed
+	}
+	if userIDUint == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	lots, err := h.service.GetAllLotsByUser(userIDUint)
@@ -181,4 +217,28 @@ func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, lots)
+}
+
+// CompleteExpired запускает немедленную проверку и завершение истекших лотов
+func (h *LotHandler) CompleteExpired(c *gin.Context) {
+	if err := h.service.CompleteExpiredLots(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Expired lots processed"})
+}
+
+// ForceComplete принудительно завершает конкретный лот (для тестирования)
+func (h *LotHandler) ForceComplete(c *gin.Context) {
+	id := c.Param("id")
+	idUint, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lot id"})
+		return
+	}
+	if err := h.service.ForceCompleteLot(idUint); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Lot forcibly completed"})
 }

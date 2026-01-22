@@ -42,8 +42,11 @@ func (r *lotRepository) UpdateLot(lotModel *models.LotModel) error {
 
 func (r *lotRepository) GetLotByID(id uint64) (*models.LotModel, error) {
 	var lotModel models.LotModel
-	if err := r.db.First(&lotModel, uint(id)).Error; err != nil {
+	if err := r.db.Preload("Bids").First(&lotModel, uint(id)).Error; err != nil {
 		return nil, err
+	}
+	if lotModel.Bids == nil {
+		lotModel.Bids = []models.Bid{}
 	}
 
 	return &lotModel, nil
@@ -72,16 +75,26 @@ func (r *lotRepository) GetAllLots(offset int, limit int, filters *LotFilters) (
 		}
 	}
 
-	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&lots).Error; err != nil {
+	if err := query.Preload("Bids").Offset(offset).Limit(limit).Order("created_at DESC").Find(&lots).Error; err != nil {
 		return nil, err
+	}
+	for i := range lots {
+		if lots[i].Bids == nil {
+			lots[i].Bids = []models.Bid{}
+		}
 	}
 	return lots, nil
 }
 
 func (r *lotRepository) GetAllLotsByUser(userID uint64) ([]models.LotModel, error) {
 	var lots []models.LotModel
-	if err := r.db.Where("seller_id = ?", userID).Find(&lots).Error; err != nil {
+	if err := r.db.Preload("Bids").Where("seller_id = ?", userID).Find(&lots).Error; err != nil {
 		return nil, err
+	}
+	for i := range lots {
+		if lots[i].Bids == nil {
+			lots[i].Bids = []models.Bid{}
+		}
 	}
 	return lots, nil
 }

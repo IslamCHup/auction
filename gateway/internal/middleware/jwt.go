@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -12,12 +13,10 @@ import (
 )
 
 type UserClaims struct {
-	UID  uint64   `json:"uid"`
+	UID  uint64 `json:"uid"`
 	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
-
-
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -36,11 +35,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("user_id", claims.UID)
 		c.Set("user_role", claims.Role)
 
-		c.Request.Header.Del("X-User-ID")
+		c.Request.Header.Del("X-User-Id")
 		c.Request.Header.Del("X-User-Role")
 
-		c.Request.Header.Set("X-User-ID", fmt.Sprintf("%d", claims.UID))
+		c.Request.Header.Set("X-User-Id", fmt.Sprintf("%d", claims.UID))
 		c.Request.Header.Set("X-User-Role", claims.Role)
+
+		log.Println("JWT OK, user_id =", claims.UID) //удалить
 
 		c.Next()
 	}

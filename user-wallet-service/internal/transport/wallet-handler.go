@@ -2,6 +2,7 @@ package transport
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -25,12 +26,14 @@ func NewWalletHandler(
 }
 
 func (h *WalletHandler) GetWallet(c *gin.Context) {
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("get wallet unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	uid := uint(uidInt)
 	h.logger.Info("get wallet", "user_id", uid)
 
 	wallet, err := h.wallet.GetWallet(uid)
@@ -45,19 +48,19 @@ func (h *WalletHandler) GetWallet(c *gin.Context) {
 func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 	var req models.TransactionForRequest
 
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("deposit unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-
+	uid := uint(uidInt)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("deposit bad request", "user_id", uid, "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	log.Println("WALLET AUTH:", c.GetHeader("Authorization")) //удалить
 	if req.Description == "" {
 		req.Description = utils.DefaultDescription
 	}
@@ -82,12 +85,13 @@ func (h *WalletHandler) WalletDeposit(c *gin.Context) {
 func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 	var req models.TransactionForRequest
 
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("freeze unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	uid := uint(uidInt)
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("freeze bad request", "user_id", uid, "err", err.Error())
@@ -119,12 +123,13 @@ func (h *WalletHandler) WalletFreeze(c *gin.Context) {
 func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 	var req models.TransactionForRequest
 
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("unfreeze unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	uid := uint(uidInt)
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("unfreeze bad request", "user_id", uid, "err", err.Error())
@@ -156,12 +161,13 @@ func (h *WalletHandler) WalletUnfreeze(c *gin.Context) {
 func (h *WalletHandler) WalletCharge(c *gin.Context) {
 	var req models.TransactionForRequest
 
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("charge unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	uid := uint(uidInt)
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("charge bad request", "user_id", uid, "err", err.Error())
@@ -191,12 +197,14 @@ func (h *WalletHandler) WalletCharge(c *gin.Context) {
 }
 
 func (h *WalletHandler) ListTransactions(c *gin.Context) {
-	uid := c.GetUint("user_id")
-	if uid == 0 {
+
+	uidInt, _ := strconv.Atoi(c.GetHeader("X-User-Id"))
+	if uidInt == 0 {
 		h.logger.Warn("list transactions unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	uid := uint(uidInt)
 
 	limit, err := parseQueryInt(c, "limit", 10, 1, 100)
 	if err != nil {

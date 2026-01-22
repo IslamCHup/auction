@@ -1,0 +1,69 @@
+{
+    "id": "auction-env",
+    "name": "Auction Service Environment",
+    "values": [
+        {
+            "key": "base_url_gateway",
+            "value": "http://localhost:8080",
+            "enabled": true
+        },
+        {
+            "key": "base_url_auction",
+            "value": "http://localhost:8081",
+            "enabled": true
+        },
+        {
+            "key": "base_url_wallet",
+            "value": "http://localhost:8080",
+            "enabled": true
+        },
+        {
+            "key": "jwt_token",
+            "value": "",
+            "enabled": true
+        },
+        {
+            "key": "buyer_id",
+            "value": "1",
+            "enabled": true
+        },
+        {
+            "key": "seller_id",
+            "value": "2",
+            "enabled": true
+        },
+        {
+            "key": "lot_id",
+            "value": "1",
+            "enabled": true
+        },
+        {
+            "key": "bid_id",
+            "value": "1",
+            "enabled": true
+        },
+        {
+            "key": "buyer_email",
+            "value": "buyer@example.com",
+            "enabled": true
+        },
+        {
+            "key": "buyer_password",
+            "value": "password123",
+            "enabled": true
+        },
+        {
+            "key": "seller_email",
+            "value": "seller@example.com",
+            "enabled": true
+        },
+        {
+            "key": "seller_password",
+            "value": "password123",
+            "enabled": true
+        }
+    ],
+    "_postman_variable_scope": "environment",
+    "_postman_exported_at": "2026-01-22T10:00:00.000Z",
+    "_postman_exported_using": "Postman/11.0.0"
+}

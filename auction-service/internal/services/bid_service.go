@@ -40,17 +40,28 @@ func NewBidService(repository repository.BidRepository, lotRepository repository
 }
 
 func (s *bidService) freezeWallet(userID uint, amount int64) error {
-	url := fmt.Sprintf("%s/wallet/freeze", os.Getenv("WALLET_SERVICE_URL"))
+	base := os.Getenv("WALLET_SERVICE_URL")
+	if base == "" {
+		return errors.New("wallet service url is not configured")
+	}
+	url := fmt.Sprintf("%s/api/wallet/freeze", base)
 
 	jsonData, err := json.Marshal(map[string]interface{}{
-		"user_id": userID,
-		"amount":  amount,
+		"amount":      amount,
+		"description": "", // опционально, сервис подставит дефолт
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call wallet service: %w", err)
 	}
@@ -65,17 +76,28 @@ func (s *bidService) freezeWallet(userID uint, amount int64) error {
 }
 
 func (s *bidService) unfreezeWallet(userID uint, amount int64) error {
-	url := fmt.Sprintf("%s/wallet/unfreeze", os.Getenv("WALLET_SERVICE_URL"))
+	base := os.Getenv("WALLET_SERVICE_URL")
+	if base == "" {
+		return errors.New("wallet service url is not configured")
+	}
+	url := fmt.Sprintf("%s/api/wallet/unfreeze", base)
 
 	jsonData, err := json.Marshal(map[string]interface{}{
-		"user_id": userID,
-		"amount":  amount,
+		"amount":      amount,
+		"description": "",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call wallet service: %w", err)
 	}
@@ -99,17 +121,17 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		return errors.New("bids can only be placed on active lots")
 	}
 
-	// Использовать текущее время для проверки, если CreatedAt не установлено
-	now := time.Now()
-	if bidModel.CreatedAt.IsZero() {
-		bidModel.CreatedAt = now
-	}
+	// Используем серверное время в UTC для валидации и фиксации времени ставки
+	now := time.Now().UTC()
+	bidModel.CreatedAt = now
 
-	if bidModel.CreatedAt.Before(lotModel.StartDate) {
+	lotStart := lotModel.StartDate.UTC()
+	lotEnd := lotModel.EndDate.UTC()
+
+	if now.Before(lotStart) {
 		return errors.New("bid cannot be created before the lot start date")
 	}
-
-	if bidModel.CreatedAt.After(lotModel.EndDate) {
+	if now.After(lotEnd) {
 		return errors.New("bid cannot be created after the lot end date")
 	}
 
@@ -171,20 +193,13 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		}
 	}
 
-	// Отправка события в Kafka о создании ставки
-	if s.kafkaProducer != nil {
-		previousLeaderID := uint64(0)
-		if previousBid != nil {
-			previousLeaderID = uint64(previousBid.UserID)
-		}
-
-		// Формируем событие в формате, который ожидает notification-service.
+	// Отправка события в Kafka о создании ставки (только если был предыдущий лидер)
+	if s.kafkaProducer != nil && previousBid != nil {
 		event := kafka.BidPlacedEvent{
 			LotID:            uint64(bidModel.LotModelID),
-			PreviousLeaderID: previousLeaderID,
+			PreviousLeaderID: uint64(previousBid.UserID),
 			NewBidAmount:     bidModel.Amount,
 		}
-
 		if err := s.kafkaProducer.SendMessage("bid_placed", fmt.Sprintf("%d", bidModel.LotModelID), event); err != nil {
 			log.Printf("WARNING: failed to send bid_placed event to Kafka: %v", err)
 		}

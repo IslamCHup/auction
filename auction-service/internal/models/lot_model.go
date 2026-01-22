@@ -30,5 +30,15 @@ type LotModel struct {
 	WinnerID uint64 `json:"winner_id" gorm:"default:0"`
 
 	CurrentBidID uint64 `json:"current_bid_id" gorm:"default:0"`
-	Bids         []Bid  `gorm:"foreignKey:LotModelID"`
+	Bids         []Bid  `json:"bids" gorm:"foreignKey:LotModelID"`
+}
+
+// UpdateLotRequest используется для обновления существующего лота
+// Все поля опциональны, чтобы можно было обновлять только нужные поля
+type UpdateLotRequest struct {
+	Title       *string    `json:"title" binding:"omitempty,min=1,max=255"`
+	Description *string    `json:"description" binding:"omitempty,min=1"`
+	StartPrice  *int64     `json:"start_price" binding:"omitempty,gte=1"`
+	MinStep     *int64     `json:"min_step" binding:"omitempty,gte=1"`
+	EndDate     *time.Time `json:"end_date" binding:"omitempty"`
 }

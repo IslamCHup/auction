@@ -29,15 +29,23 @@ func main() {
 	r.Use(middleware.TimeoutMiddleware())
 
 	r.Any("/api/auth/*path", proxy.MakeProxyHandler(authProxy))
-	r.Any("/api/users/*path", proxy.MakeProxyHandler(authProxy))
 
-	r.Use(middleware.AuthMiddleware())
-	r.Use(middleware.UserRateLimitMiddleware())
-	r.Use(middleware.BidRateLimitMiddleware())
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.UserRateLimitMiddleware())
+	protected.Use(middleware.BidRateLimitMiddleware())
 
-	r.Any("/api/lots/*path", proxy.MakeProxyHandler(auctionProxy))
-	r.Any("/api/wallet/*path", proxy.MakeProxyHandler(walletProxy))
-	r.Any("/api/notifications/*path", proxy.MakeProxyHandler(notificationProxy))
+	// Маршруты пользователя, относящиеся к аукциону, должны идти до общего /api/users/*path
+	protected.Any("/api/users/:id/bids", proxy.MakeProxyHandler(auctionProxy))
+	protected.Any("/api/users/:id/lots", proxy.MakeProxyHandler(auctionProxy))
+	// Остальные пользовательские маршруты (только me) идут в auth/user-wallet сервис, без wildcard чтобы не конфликтовать с Gin
+	protected.Any("/api/users/me", proxy.MakeProxyHandler(authProxy))
+
+	protected.Any("/api/lots", proxy.MakeProxyHandler(auctionProxy))
+	protected.Any("/api/lots/*path", proxy.MakeProxyHandler(auctionProxy))
+
+	protected.Any("/api/wallet/*path", proxy.MakeProxyHandler(walletProxy))
+	protected.Any("/api/notifications/*path", proxy.MakeProxyHandler(notificationProxy))
 
 	port := os.Getenv("PORT")
 	if port == "" {
