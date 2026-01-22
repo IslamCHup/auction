@@ -4,9 +4,14 @@ import (
 	"auction-service/internal/kafka"
 	"auction-service/internal/models"
 	"auction-service/internal/repository"
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
 	"time"
 )
 
@@ -154,6 +159,13 @@ func (s *lotService) CompleteExpiredLots() error {
 			return err
 		}
 
+		// Списать замороженные средства победителя
+		if lot.WinnerID != 0 && lot.CurrentPrice > 0 {
+			if err := s.chargeWallet(uint(lot.WinnerID), lot.CurrentPrice, fmt.Sprintf("Auction payment for lot #%d", lot.ID)); err != nil {
+				log.Printf("WARNING: failed to charge winner wallet for lot %d: %v", lot.ID, err)
+			}
+		}
+
 		// Отправка события в Kafka о завершении лота
 		if s.kafkaProducer != nil {
 			// Пока у нас нет списка всех участников аукциона, LoserIDs оставляем пустым.
@@ -168,6 +180,42 @@ func (s *lotService) CompleteExpiredLots() error {
 				log.Printf("WARNING: failed to send lot_completed event to Kafka: %v", err)
 			}
 		}
+	}
+	return nil
+}
+
+// chargeWallet вызывает user-wallet-service для списания (charge) замороженных средств
+func (s *lotService) chargeWallet(userID uint, amount int64, description string) error {
+	base := os.Getenv("WALLET_SERVICE_URL")
+	if base == "" {
+		return errors.New("wallet service url is not configured")
+	}
+	url := fmt.Sprintf("%s/api/wallet/charge", base)
+
+	payload := map[string]any{
+		"amount":      amount,
+		"description": description,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal charge payload: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("failed to build charge request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call wallet charge: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("wallet charge returned %d: %s", resp.StatusCode, string(b))
 	}
 	return nil
 }
@@ -188,6 +236,13 @@ func (s *lotService) ForceCompleteLot(id uint64) error {
 	}
 	if err := s.repository.UpdateLot(lot); err != nil {
 		return err
+	}
+
+	// Списать замороженные средства победителя
+	if lot.WinnerID != 0 && lot.CurrentPrice > 0 {
+		if err := s.chargeWallet(uint(lot.WinnerID), lot.CurrentPrice, fmt.Sprintf("Auction payment for lot #%d", lot.ID)); err != nil {
+			log.Printf("WARNING: failed to charge winner wallet for lot %d: %v", lot.ID, err)
+		}
 	}
 
 	if s.kafkaProducer != nil {
