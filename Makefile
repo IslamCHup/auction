@@ -1,4 +1,4 @@
-build: ## Линтинг кода с помощью golangci-lint
+build: 
 	docker compose build
-docker up: ## Линтинг кода с помощью golangci-lint
+docker up: 
 	docker compose up -d
