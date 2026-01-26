@@ -1,12 +1,7 @@
-<div align="center">
-
 # Auction Platform (Gateway + Auction + User/Wallet + Notifications)
 
 Микросервисная платформа аукционов с API Gateway, аукционом, кошельком пользователей и сервисом уведомлений.
 
-[Демо: http://localhost:8080](http://localhost:8080)
-
-</div>
 
 ---
 
@@ -19,11 +14,14 @@
 
 ## Стек
 
-- Язык/фреймворки: Go, Gin, GORM
-- Инфраструктура: Docker, Docker Compose
-- Хранилище: PostgreSQL
-- Сообщения: Apache Kafka, Kafka UI
-- Аутентификация: JWT 
+[![Go](https://img.shields.io/badge/Go-1.20%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![Gin](https://img.shields.io/badge/Gin-Framework-00ADD8?logo=go&logoColor=white)](https://gin-gonic.com/)
+[![GORM](https://img.shields.io/badge/GORM-ORM-CE2D2D?logo=go&logoColor=white)](https://gorm.io/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DB-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-Event%20Streaming-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
+[![Kafka UI](https://img.shields.io/badge/Kafka%20UI-Tool-231F20?logo=apachekafka&logoColor=white)](https://github.com/provectus/kafka-ui)
+[![JWT](https://img.shields.io/badge/JWT-Auth-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 
 ---
 
