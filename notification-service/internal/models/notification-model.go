@@ -14,12 +14,12 @@ const (
 type Notification struct {
 	gorm.Model
 
-	UserID uint64 `gorm:"index;not null" json:"user_id"`
-	LotID  uint64 `gorm:"index;not null" json:"lot_id"`
-	Type string `gorm:"type:varchar(32);not null;index" json:"type"`
+	UserID  uint64 `gorm:"index;not null" json:"user_id"`
+	LotID   uint64 `gorm:"index;not null" json:"lot_id"`
+	Type    string `gorm:"type:varchar(32);not null;index" json:"type"`
 	Title   string `gorm:"type:varchar(255);not null" json:"title"`
 	Message string `gorm:"type:text;not null" json:"message"`
-	IsRead bool `gorm:"default:false;index" json:"is_read"`
+	IsRead  bool   `gorm:"default:false;index" json:"is_read"`
 }
 
 type BidPlacedEvent struct {
@@ -36,7 +36,7 @@ type LotCompletedEvent struct {
 }
 
 type FilterNotification struct {
-	UserID *uint64 `form:"-"` // из auth, не из query
+	UserID *uint64 `form:"-"`
 	IsRead *bool   `form:"is_read"`
 	Limit  int     `form:"limit" default:"20"`
 	Offset int     `form:"offset" default:"0"`

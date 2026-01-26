@@ -23,7 +23,6 @@ type LotService interface {
 	UpdateLot(lotModel *models.LotModel) error
 	GetAllLotsByUser(userID uint64) ([]models.LotModel, error)
 	CompleteExpiredLots() error
-	// ForceCompleteLot — принудительно завершить лот (для админ-теста)
 	ForceCompleteLot(id uint64) error
 }
 
@@ -41,9 +40,7 @@ func NewLotService(repository repository.LotRepository, bidRepository repository
 	}
 }
 
-//19:17:56
 func (s *lotService) CreateLot(lotModel *models.LotModel) error {
-	// Установка значений по умолчанию
 	lotModel.Status = models.LotStatusDraft
 	nowUTC := time.Now().UTC()
 	if lotModel.StartDate.IsZero() {
@@ -57,7 +54,6 @@ func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 		lotModel.EndDate = lotModel.EndDate.UTC()
 	}
 
-	// Валидация бизнес-правил после установки значений по умолчанию
 	if lotModel.EndDate.Before(lotModel.StartDate) {
 		return errors.New("end date must be after start date")
 	}
@@ -65,7 +61,6 @@ func (s *lotService) CreateLot(lotModel *models.LotModel) error {
 		return errors.New("start date cannot be in the past")
 	}
 
-	// Инициализация полей
 	lotModel.CurrentPrice = lotModel.StartPrice
 	lotModel.WinnerID = 0
 	lotModel.CurrentBidID = 0
@@ -82,7 +77,6 @@ func (s *lotService) PublishLot(id uint64) error {
 		return errors.New("only draft lots can be published")
 	}
 	lotModel.Status = models.LotStatusActive
-	// Убедимся, что CurrentPrice инициализирован
 	if lotModel.CurrentPrice == 0 {
 		lotModel.CurrentPrice = lotModel.StartPrice
 	}
@@ -98,13 +92,10 @@ func (s *lotService) GetLotByID(id uint64) (*models.LotModel, error) {
 }
 
 func (s *lotService) GetAllLots(offset int, limit int, filters *repository.LotFilters) ([]models.LotModel, error) {
-	// Бизнес-правило: по умолчанию показываем только активные лоты
-	// Это валидация/правило на уровне service, а не repository
 	if filters == nil {
 		status := models.LotStatusActive
 		filters = &repository.LotFilters{Status: &status}
 	} else if filters.Status == nil {
-		// Если фильтры заданы, но статус не указан, по умолчанию показываем активные
 		status := models.LotStatusActive
 		filters.Status = &status
 	}
@@ -112,13 +103,11 @@ func (s *lotService) GetAllLots(offset int, limit int, filters *repository.LotFi
 }
 
 func (s *lotService) UpdateLot(lotModel *models.LotModel) error {
-	// Получить существующий лот для проверки статуса
 	existingLot, err := s.repository.GetLotByID(uint64(lotModel.ID))
 	if err != nil {
 		return fmt.Errorf("failed to get lot: %w", err)
 	}
 
-	// Бизнес-правило: редактировать можно только draft лоты
 	if existingLot.Status != models.LotStatusDraft {
 		return errors.New("only draft lots can be updated")
 	}
@@ -148,7 +137,6 @@ func (s *lotService) CompleteExpiredLots() error {
 
 	for _, lot := range expiredLots {
 		lot.Status = models.LotStatusCompleted
-		// Установить WinnerID из текущей лучшей ставки
 		if lot.CurrentBidID != 0 {
 			bid, err := s.bidRepository.GetBidByID(lot.CurrentBidID)
 			if err == nil && bid != nil {
@@ -159,16 +147,13 @@ func (s *lotService) CompleteExpiredLots() error {
 			return err
 		}
 
-		// Списать замороженные средства победителя
 		if lot.WinnerID != 0 && lot.CurrentPrice > 0 {
 			if err := s.chargeWallet(uint(lot.WinnerID), lot.CurrentPrice, fmt.Sprintf("Auction payment for lot #%d", lot.ID)); err != nil {
 				log.Printf("WARNING: failed to charge winner wallet for lot %d: %v", lot.ID, err)
 			}
 		}
 
-		// Отправка события в Kafka о завершении лота
 		if s.kafkaProducer != nil {
-			// Пока у нас нет списка всех участников аукциона, LoserIDs оставляем пустым.
 			event := kafka.LotCompletedEvent{
 				LotID:      uint64(lot.ID),
 				Winner:     lot.WinnerID,
@@ -184,7 +169,6 @@ func (s *lotService) CompleteExpiredLots() error {
 	return nil
 }
 
-// chargeWallet вызывает user-wallet-service для списания (charge) замороженных средств
 func (s *lotService) chargeWallet(userID uint, amount int64, description string) error {
 	base := os.Getenv("WALLET_SERVICE_URL")
 	if base == "" {
@@ -220,7 +204,6 @@ func (s *lotService) chargeWallet(userID uint, amount int64, description string)
 	return nil
 }
 
-// ForceCompleteLot принудительно завершает лот, независимо от дат
 func (s *lotService) ForceCompleteLot(id uint64) error {
 	lot, err := s.repository.GetLotByID(id)
 	if err != nil {
@@ -238,7 +221,6 @@ func (s *lotService) ForceCompleteLot(id uint64) error {
 		return err
 	}
 
-	// Списать замороженные средства победителя
 	if lot.WinnerID != 0 && lot.CurrentPrice > 0 {
 		if err := s.chargeWallet(uint(lot.WinnerID), lot.CurrentPrice, fmt.Sprintf("Auction payment for lot #%d", lot.ID)); err != nil {
 			log.Printf("WARNING: failed to charge winner wallet for lot %d: %v", lot.ID, err)

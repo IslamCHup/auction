@@ -31,7 +31,6 @@ func NewWalletService(repo repository.WalletRepository, db *gorm.DB, logger *slo
 
 func (s *walletService) GetWallet(userID uint) (*models.Wallet, error) {
 	s.logger.Info("service get wallet", "user_id", userID)
-	// убедимся, что кошелек существует
 	wallet, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		s.logger.Error("service get wallet failed", "user_id", userID, "err", err.Error())

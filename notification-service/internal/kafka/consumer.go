@@ -116,18 +116,3 @@ func RunConsumerBidPlaced(
 		}
 	}
 }
-
-/*
-Минимально необходимое в БД:
-CREATE UNIQUE INDEX uniq_bid_outbid
-ON notifications (user_id, lot_id, type);
-
-
-И в сервисе:
-
-if errors.Is(err, gorm.ErrDuplicatedKey) {
-	return nil // считаем событие успешно обработанным
-}
-
-Без этого дубликаты неизбежны, и это не баг consumer’а.
-*/

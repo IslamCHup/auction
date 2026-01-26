@@ -56,7 +56,6 @@ func (r *lotRepository) GetAllLots(offset int, limit int, filters *LotFilters) (
 	var lots []models.LotModel
 	query := r.db
 
-	// Применяем фильтры, если они заданы
 	if filters != nil {
 		if filters.Status != nil {
 			query = query.Where("status = ?", *filters.Status)

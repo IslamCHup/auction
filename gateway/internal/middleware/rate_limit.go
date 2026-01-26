@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -67,8 +66,6 @@ func UserRateLimitMiddleware() gin.HandlerFunc {
 		}
 		uid := uidAny.(uint64)
 		
-		log.Println("JWT OK, user_id =", uid) //удалить
-
 		bucket := getOrCreateBucket(&userBucket, uid, 100, 100.0/60.0)
 
 		if !bucket.Allow() {

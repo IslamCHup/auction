@@ -32,9 +32,7 @@ func (h *BidHandler) CreateBid(c *gin.Context) {
 		return
 	}
 
-	// Установить LotModelID из URL и время создания
 	bidModel.LotModelID = uint(lotIDUint)
-	// Если user_id не передан в теле, возьмем из заголовка X-User-Id, который проставляет gateway
 	if bidModel.UserID == 0 {
 		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
 			if uidParsed, convErr := strconv.Atoi(uidStr); convErr == nil && uidParsed > 0 {
@@ -42,7 +40,6 @@ func (h *BidHandler) CreateBid(c *gin.Context) {
 			}
 		}
 	}
-	// Фиксируем время создания на стороне сервера в UTC, чтобы избежать проблем TZ
 	bidModel.CreatedAt = time.Now().UTC()
 
 	err = h.service.CreateBid(&bidModel)
@@ -85,14 +82,12 @@ func (h *BidHandler) GetAllBids(c *gin.Context) {
 }
 
 func (h *BidHandler) GetAllBidsByUser(c *gin.Context) {
-	// Сначала пробуем заголовок X-User-Id от gateway
 	var userIDUint uint64
 	if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
 		if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil && parsed > 0 {
 			userIDUint = parsed
 		}
 	}
-	// Фоллбэк на path-параметр
 	if userIDUint == 0 {
 		userID := c.Param("id")
 		parsed, err := strconv.ParseUint(userID, 10, 64)

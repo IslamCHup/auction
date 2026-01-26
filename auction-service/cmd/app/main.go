@@ -16,7 +16,6 @@ func main() {
 	server := gin.Default()
 	db := config.InitDatabase()
 
-	// Инициализация Kafka producer
 	kafkaProducer, err := kafka.NewProducer()
 	if err != nil {
 		log.Printf("WARNING: Failed to initialize Kafka producer: %v. Continuing without Kafka.", err)
@@ -41,9 +40,7 @@ func main() {
 	tutu.GET("/lots/:id", lotHandler.GetLotByID)
 	tutu.PUT("/lots/:id", lotHandler.UpdateLot)
 	tutu.POST("/lots/:id/publish", lotHandler.PublishLot)
-	// Админ/служебный эндпойнт для немедленного завершения истекших лотов
 	tutu.POST("/lots/complete-expired", lotHandler.CompleteExpired)
-	// Админ/служебный эндпойнт для принудительного завершения конкретного лота
 	tutu.POST("/lots/:id/force-complete", lotHandler.ForceComplete)
 	tutu.POST("/lots/:id/bids", bidHandler.CreateBid)
 	tutu.GET("/lots/:id/bids", bidHandler.GetAllBids)

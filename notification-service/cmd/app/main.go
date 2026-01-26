@@ -44,7 +44,6 @@ func main() {
 	if port == "" {
 		port = "8083"
 	}
-	// Запускаем консьюмеров Kafka
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 

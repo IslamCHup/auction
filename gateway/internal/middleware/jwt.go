@@ -3,7 +3,6 @@ package middleware
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -41,7 +40,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Request.Header.Set("X-User-Id", fmt.Sprintf("%d", claims.UID))
 		c.Request.Header.Set("X-User-Role", claims.Role)
 
-		log.Println("JWT OK, user_id =", claims.UID) //удалить
+        
 
 		c.Next()
 	}

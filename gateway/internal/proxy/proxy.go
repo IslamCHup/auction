@@ -35,34 +35,9 @@ func NewReverseProxy(fullURL string, logger *slog.Logger) *httputil.ReverseProxy
 
 	return serviceProxy
 }
-
-// func MakeProxyHandler(proxy *httputil.ReverseProxy) gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-
-// 		// 🔥 работаем ТОЛЬКО с оригинальным URL
-// 		path := strings.TrimPrefix(c.Request.URL.Path, "/api")
-// 		if path == "" {
-// 			path = "/"
-// 		}
-// 		c.Request.URL.Path = path
-
-// 		// прокидываем auth headers
-// 		if auth := c.GetHeader("Authorization"); auth != "" {
-// 			c.Request.Header.Set("Authorization", auth)
-// 		}
-// 		if uid := c.GetHeader("X-User-Id"); uid != "" {
-// 			c.Request.Header.Set("X-User-Id", uid)
-// 		}
-
-// 		proxy.ServeHTTP(c.Writer, c.Request)
-// 	}
-// }
-
 func MakeProxyHandler(proxy *httputil.ReverseProxy) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		// ❌ НИЧЕГО не делаем с Path
-		// оставляем /api/auth/register как есть
 
 		if auth := c.GetHeader("Authorization"); auth != "" {
 			c.Request.Header.Set("Authorization", auth)

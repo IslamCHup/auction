@@ -65,7 +65,6 @@ func (s *notificationService) CreateWinnerLoserNotification(event *models.LotCom
 }
 
 func (s *notificationService) CreateBidPlacedNotification(event *models.BidPlacedEvent) error {
-	// Если предыдущего лидера не было (первая ставка) — уведомлять некого
 	if event.PreviousLeaderID == 0 {
 		s.logger.Info("skip bid_outbid notification: no previous leader", "lot_id", event.LotID)
 		return nil

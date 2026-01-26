@@ -53,7 +53,6 @@ func paginationParams(c *gin.Context) (page int, limit int) {
 func parseFilters(c *gin.Context) *repository.LotFilters {
 	filters := &repository.LotFilters{}
 
-	// Фильтр по статусу
 	if statusStr := c.Query("status"); statusStr != "" {
 		status := models.LotStatus(statusStr)
 		if status == models.LotStatusDraft || status == models.LotStatusActive || status == models.LotStatusCompleted {
@@ -61,41 +60,34 @@ func parseFilters(c *gin.Context) *repository.LotFilters {
 		}
 	}
 
-	// Фильтр по минимальной цене
 	if minPriceStr := c.Query("min_price"); minPriceStr != "" {
 		if minPrice, err := strconv.ParseInt(minPriceStr, 10, 64); err == nil {
 			if minPrice > 0 {
 				filters.MinPrice = &minPrice
 			}
-			// minPrice <= 0 трактуем как "фильтр не задан", поэтому просто не устанавливаем его
 		}
 	}
 
-	// Фильтр по максимальной цене
 	if maxPriceStr := c.Query("max_price"); maxPriceStr != "" {
 		if maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64); err == nil {
 			if maxPrice > 0 {
 				filters.MaxPrice = &maxPrice
 			}
-			// maxPrice <= 0 трактуем как "фильтр не задан"
 		}
 	}
 
-	// Фильтр по минимальной дате окончания
 	if minEndDateStr := c.Query("min_end_date"); minEndDateStr != "" {
 		if minEndDate, err := time.Parse(time.RFC3339, minEndDateStr); err == nil {
 			filters.MinEndDate = &minEndDate
 		}
 	}
 
-	// Фильтр по максимальной дате окончания
 	if maxEndDateStr := c.Query("max_end_date"); maxEndDateStr != "" {
 		if maxEndDate, err := time.Parse(time.RFC3339, maxEndDateStr); err == nil {
 			filters.MaxEndDate = &maxEndDate
 		}
 	}
 
-	// Если фильтры не заданы, возвращаем nil (будет использован фильтр по умолчанию в service - только active)
 	if filters.Status == nil && filters.MinPrice == nil && filters.MaxPrice == nil && filters.MinEndDate == nil && filters.MaxEndDate == nil {
 		return nil
 	}
@@ -129,14 +121,12 @@ func (h *LotHandler) UpdateLot(c *gin.Context) {
 		return
 	}
 
-	// Получить существующий лот
 	lot, err := h.service.GetLotByID(idUint)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "lot not found"})
 		return
 	}
 
-	// Обновить только предоставленные поля
 	if updateReq.Title != nil {
 		lot.Title = *updateReq.Title
 	}
@@ -190,14 +180,12 @@ func (h *LotHandler) GetLotByID(c *gin.Context) {
 }
 
 func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
-	// Сначала пробуем взять пользователя из заголовка X-User-Id, который проставляет gateway
 	var userIDUint uint64
 	if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
 		if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil && parsed > 0 {
 			userIDUint = parsed
 		}
 	}
-	// Фоллбэк: если заголовка нет, используем path-параметр
 	if userIDUint == 0 {
 		userID := c.Param("id")
 		parsed, err := strconv.ParseUint(userID, 10, 64)
@@ -219,7 +207,6 @@ func (h *LotHandler) GetAllLotsByUser(c *gin.Context) {
 	c.JSON(http.StatusOK, lots)
 }
 
-// CompleteExpired запускает немедленную проверку и завершение истекших лотов
 func (h *LotHandler) CompleteExpired(c *gin.Context) {
 	if err := h.service.CompleteExpiredLots(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -228,7 +215,6 @@ func (h *LotHandler) CompleteExpired(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Expired lots processed"})
 }
 
-// ForceComplete принудительно завершает конкретный лот (для тестирования)
 func (h *LotHandler) ForceComplete(c *gin.Context) {
 	id := c.Param("id")
 	idUint, err := strconv.ParseUint(id, 10, 64)

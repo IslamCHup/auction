@@ -70,7 +70,6 @@ func (h *NotificationHandler) ListNotification(c *gin.Context) {
 		}
 	}
 
-	// Фоллбэк: берем user_id из заголовка, который проставляет gateway
 	if filter.UserID == nil {
 		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
 			if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil {
@@ -114,7 +113,6 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 func (h *NotificationHandler) CountUnread(c *gin.Context) {
 	v, ok := c.Get("user_id")
 	if !ok {
-		// fallback: берем из заголовка
 		if uidStr := c.GetHeader("X-User-Id"); uidStr != "" {
 			if parsed, err := strconv.ParseUint(uidStr, 10, 64); err == nil {
 				v = parsed
@@ -130,7 +128,6 @@ func (h *NotificationHandler) CountUnread(c *gin.Context) {
 
 	userID, ok := v.(uint64)
 	if !ok {
-		// попытка преобразовать, если это строка/число
 		switch t := v.(type) {
 		case int:
 			userID = uint64(t)

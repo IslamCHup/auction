@@ -48,7 +48,7 @@ func (s *bidService) freezeWallet(userID uint, amount int64) error {
 
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"amount":      amount,
-		"description": "", // опционально, сервис подставит дефолт
+		"description": "",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
@@ -121,7 +121,6 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		return errors.New("bids can only be placed on active lots")
 	}
 
-	// Используем серверное время в UTC для валидации и фиксации времени ставки
 	now := time.Now().UTC()
 	bidModel.CreatedAt = now
 
@@ -141,7 +140,6 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 			minRequiredAmount, lotModel.CurrentPrice, lotModel.MinStep)
 	}
 
-	// Сохранить ID предыдущей ставки для разморозки
 	previousBidID := lotModel.CurrentBidID
 	var previousBid *models.Bid
 	if previousBidID != 0 {
@@ -155,33 +153,26 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		}
 	}
 
-	// 1. Заморозить средства нового участника
 	err = s.freezeWallet(bidModel.UserID, bidModel.Amount)
 	if err != nil {
 		return fmt.Errorf("failed to freeze wallet: %w", err)
 	}
 
-	// 2. Сохранить ставку
 	err = s.repository.CreateBid(bidModel)
 	if err != nil {
-		// Компенсация: откатить заморозку средств текущего пользователя при ошибке сохранения
 		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return fmt.Errorf("failed to create bid: %w", err)
 	}
 
-	// Проверить, что GORM установил ID
 	if bidModel.ID == 0 {
-		// Компенсация: откатить заморозку средств текущего пользователя
 		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return errors.New("failed to create bid: ID not set")
 	}
 
-	// 3. Обновить лот: текущая цена и ID текущей ставки
 	lotModel.CurrentPrice = bidModel.Amount
 	lotModel.CurrentBidID = uint64(bidModel.ID)
 	err = s.lotRepository.UpdateLot(lotModel)
 	if err != nil {
-		// Компенсация: откатить заморозку средств текущего пользователя при ошибке обновления
 		s.unfreezeWallet(bidModel.UserID, bidModel.Amount)
 		return fmt.Errorf("failed to update lot: %w", err)
 	}
@@ -193,7 +184,6 @@ func (s *bidService) CreateBid(bidModel *models.Bid) error {
 		}
 	}
 
-	// Отправка события в Kafka о создании ставки (только если был предыдущий лидер)
 	if s.kafkaProducer != nil && previousBid != nil {
 		event := kafka.BidPlacedEvent{
 			LotID:            uint64(bidModel.LotModelID),
