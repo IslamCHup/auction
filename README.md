@@ -71,6 +71,12 @@ Postman-коллекция: postman/collections/Auction Gateway API.postman_coll
 
 ---
 
+## Схема 
+
+![ER диаграмма](./er-diagramm.png)
+
+---
+
 ## Быстрый старт
 
 Требования: Docker, Docker Compose, Make (опционально), Go ≥ 1.20 (для локального запуска без контейнеров).
