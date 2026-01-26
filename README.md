@@ -6,8 +6,6 @@
 
 ## Коротко о проекте
 
-Платформа аукционов, реализованная на микросервисной архитектуре.
-
 Проект представляет собой микросервисную платформу аукциона. 
 Система состоит из API Gateway и независимых сервисов (пользователи и кошелёк, аукционы, уведомления), развёрнутых в Docker-окружении.
 
@@ -43,24 +41,22 @@
 cat > .env << 'EOF'
 JWT_SECRET=change-me-super-secret
 EOF
-
-docker compose up -d --build
+make build
+make docker up
 ```
 
 ---
 
 
-## Мой вклад в проект
+## Что я реализовывал в проекте
 
-### API Gateway
-- Reverse Proxy для всех микросервисов (Auth/User, Wallet, Auction, Notification)
-- JWT-валидация (HS256) с прокидыванием `X-User-Id` и `X-User-Role` через headers
+- Reverse Proxy из Gateway для всех микросервисов (Auth/User, Wallet, Auction, Notification)
+- JWT-валидация с прокидыванием `X-User-Id` и `X-User-Role` через headers
 - Rate limiting per-user (общий и отдельный для ставок)
 - Таймауты на upstream-запросы
-- Kafka consumers для событий `bid_placed` и `lot_completed`
-- Асинхронное создание уведомлений для пользователей
+- Kafka consumers для событий `ставка перебита` и `аукцион завершен`
+- Асинхронное создание уведомлений для пользователей на основе событий из Kafka
 - Хранение уведомлений в PostgreSQL
-- Синхронные вызовы через Gateway с единым API
 - Graceful shutdown Kafka consumers
 - Структурированное логирование (`slog`)
 - Создание Docker Compose
