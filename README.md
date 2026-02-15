@@ -1,6 +1,6 @@
 # Auction Platform (Gateway + Auction + User/Wallet + Notifications)
 
-Платформа аукционов, реализованная на микросервисной архитектуре
+Платформа аукционов, реализованная на микросервисной архитектуре с API Gateway
 
 ---
 
