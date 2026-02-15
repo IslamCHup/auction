@@ -59,7 +59,7 @@ make docker up
 - Хранение уведомлений в PostgreSQL
 - Graceful shutdown Kafka consumers
 - Структурированное логирование (`slog`)
-- Создание Docker Compose
+- Создание Docker Compose.
 
 
 ## Контакты
